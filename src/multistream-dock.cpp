@@ -85,8 +85,8 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 	editRow->addStretch();
 
 	sync_ = new QCheckBox(T("OhMyDj.Stream.Sync"), this);
+	sync_->setToolTip(T("OhMyDj.Stream.SyncTip"));
 	auto *hint = new QLabel(T("OhMyDj.Stream.Hint"), this);
-	hint->setWordWrap(true);
 	hint->setEnabled(false);
 
 	auto *layout = new QVBoxLayout(this);
