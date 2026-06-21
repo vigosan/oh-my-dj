@@ -53,6 +53,23 @@ QString StatusText(StreamStatus status)
 	}
 }
 
+void ApplyStatus(QLabel *label, StreamStatus status)
+{
+	label->setText(StatusText(status));
+	const char *color = "";
+	switch (status) {
+	case StreamStatus::Live:
+		color = "color: #e23b3b; font-weight: bold;";
+		break;
+	case StreamStatus::Error:
+		color = "color: #e23b3b;";
+		break;
+	default:
+		break;
+	}
+	label->setStyleSheet(color);
+}
+
 } // namespace
 
 MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
@@ -144,8 +161,9 @@ void MultistreamDock::addRow(const StreamTarget &target)
 	activeLayout->setContentsMargins(0, 0, 0, 0);
 	table_->setCellWidget(row, ColActive, activeCell);
 
-	auto *status = new QLabel(StatusText(StreamStatus::Idle));
+	auto *status = new QLabel();
 	status->setAlignment(Qt::AlignCenter);
+	ApplyStatus(status, StreamStatus::Idle);
 	table_->setCellWidget(row, ColStatus, status);
 
 	// Picking a known platform fills its RTMP URL, unless the user typed one.
@@ -237,7 +255,7 @@ void MultistreamDock::onRunningChanged(bool running)
 	if (!running) {
 		for (int row = 0; row < table_->rowCount(); ++row) {
 			if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(row, ColStatus)))
-				label->setText(StatusText(StreamStatus::Idle));
+				ApplyStatus(label, StreamStatus::Idle);
 		}
 	}
 }
@@ -247,7 +265,7 @@ void MultistreamDock::onTargetStatusChanged(int index, int status)
 	if (index < 0 || index >= table_->rowCount())
 		return;
 	if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(index, ColStatus)))
-		label->setText(StatusText(static_cast<StreamStatus>(status)));
+		ApplyStatus(label, static_cast<StreamStatus>(status));
 }
 
 void MultistreamDock::persist()
