@@ -23,10 +23,27 @@ ohmydj::MultistreamDock *g_multistream = nullptr;
 void OnFrontendEvent(enum obs_frontend_event event, void *)
 {
 	switch (event) {
+	case OBS_FRONTEND_EVENT_SCENE_CHANGED:
+		if (g_rotation)
+			g_rotation->onSceneChanged();
+		break;
 	case OBS_FRONTEND_EVENT_SCENE_LIST_CHANGED:
-	case OBS_FRONTEND_EVENT_FINISHED_LOADING:
 		if (g_rotation)
 			g_rotation->refreshScenes();
+		break;
+	case OBS_FRONTEND_EVENT_FINISHED_LOADING:
+		if (g_rotation) {
+			g_rotation->refreshScenes();
+			g_rotation->onSceneChanged();
+		}
+		break;
+	case OBS_FRONTEND_EVENT_STREAMING_STARTED:
+		if (g_multistream)
+			g_multistream->onObsStreamingStarted();
+		break;
+	case OBS_FRONTEND_EVENT_STREAMING_STOPPING:
+		if (g_multistream)
+			g_multistream->onObsStreamingStopping();
 		break;
 	case OBS_FRONTEND_EVENT_EXIT:
 		if (g_rotation)
@@ -50,6 +67,7 @@ bool obs_module_load(void)
 
 	auto *tabs = new QTabWidget(main);
 	tabs->setObjectName("oh-my-dj-dock");
+	tabs->setMinimumWidth(780);
 	tabs->addTab(g_rotation, obs_module_text("OhMyDj.Tab.Cameras"));
 	tabs->addTab(g_multistream, obs_module_text("OhMyDj.Tab.Streaming"));
 

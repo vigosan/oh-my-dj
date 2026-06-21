@@ -36,6 +36,7 @@ struct MultistreamEngine::Impl {
 	std::vector<StreamTarget> targets;
 	int videoBitrate = 6000;
 	bool running = false;
+	bool ownEncoders = false; // true => we created venc/aenc and must release them
 
 	obs_encoder_t *venc = nullptr;
 	obs_encoder_t *aenc = nullptr;
@@ -88,7 +89,7 @@ bool MultistreamEngine::running() const
 	return d_->running;
 }
 
-void MultistreamEngine::start()
+void MultistreamEngine::start(bool useMainEncoders)
 {
 	if (d_->running)
 		return;
@@ -103,18 +104,34 @@ void MultistreamEngine::start()
 	if (!any)
 		return;
 
-	// One shared video + audio encoder bound to the global program output.
-	obs_data_t *vsettings = obs_data_create();
-	obs_data_set_int(vsettings, "bitrate", d_->videoBitrate);
-	d_->venc = obs_video_encoder_create("obs_x264", "ohmydj-venc", vsettings, nullptr);
-	obs_data_release(vsettings);
-	obs_encoder_set_video(d_->venc, obs_get_video());
+	if (useMainEncoders) {
+		// Borrow OBS's main streaming encoders: one encode feeds both OBS's
+		// own destination and ours. They exist only while OBS is streaming.
+		obs_output_t *mainOutput = obs_frontend_get_streaming_output();
+		if (!mainOutput)
+			return;
+		// Borrowed pointers; the output keeps the encoders alive while it streams.
+		d_->venc = obs_output_get_video_encoder(mainOutput);
+		d_->aenc = obs_output_get_audio_encoder(mainOutput, 0);
+		obs_output_release(mainOutput);
+		d_->ownEncoders = false;
+		if (!d_->venc || !d_->aenc)
+			return;
+	} else {
+		// One shared video + audio encoder bound to the global program output.
+		obs_data_t *vsettings = obs_data_create();
+		obs_data_set_int(vsettings, "bitrate", d_->videoBitrate);
+		d_->venc = obs_video_encoder_create("obs_x264", "ohmydj-venc", vsettings, nullptr);
+		obs_data_release(vsettings);
+		obs_encoder_set_video(d_->venc, obs_get_video());
 
-	obs_data_t *asettings = obs_data_create();
-	obs_data_set_int(asettings, "bitrate", 160);
-	d_->aenc = obs_audio_encoder_create("ffmpeg_aac", "ohmydj-aenc", asettings, 0, nullptr);
-	obs_data_release(asettings);
-	obs_encoder_set_audio(d_->aenc, obs_get_audio());
+		obs_data_t *asettings = obs_data_create();
+		obs_data_set_int(asettings, "bitrate", 160);
+		d_->aenc = obs_audio_encoder_create("ffmpeg_aac", "ohmydj-aenc", asettings, 0, nullptr);
+		obs_data_release(asettings);
+		obs_encoder_set_audio(d_->aenc, obs_get_audio());
+		d_->ownEncoders = true;
+	}
 
 	for (int i = 0; i < static_cast<int>(d_->targets.size()); ++i) {
 		const StreamTarget &t = d_->targets[i];
@@ -168,14 +185,14 @@ void MultistreamEngine::stop()
 	}
 	d_->outputs.clear();
 
-	if (d_->venc) {
-		obs_encoder_release(d_->venc);
-		d_->venc = nullptr;
+	if (d_->ownEncoders) {
+		if (d_->venc)
+			obs_encoder_release(d_->venc);
+		if (d_->aenc)
+			obs_encoder_release(d_->aenc);
 	}
-	if (d_->aenc) {
-		obs_encoder_release(d_->aenc);
-		d_->aenc = nullptr;
-	}
+	d_->venc = nullptr;
+	d_->aenc = nullptr;
 
 	d_->running = false;
 	emit runningChanged(false);
@@ -194,6 +211,7 @@ StreamConfig LoadStreamConfig()
 
 	if (obs_data_has_user_value(root, "bitrate"))
 		config.videoBitrate = static_cast<int>(obs_data_get_int(root, "bitrate"));
+	config.syncWithObs = obs_data_get_bool(root, "sync_with_obs");
 
 	obs_data_array_t *arr = obs_data_get_array(root, "targets");
 	if (arr) {
@@ -222,6 +240,7 @@ void SaveStreamConfig(const StreamConfig &config)
 
 	obs_data_t *root = obs_data_create();
 	obs_data_set_int(root, "bitrate", config.videoBitrate);
+	obs_data_set_bool(root, "sync_with_obs", config.syncWithObs);
 	obs_data_array_t *arr = obs_data_array_create();
 	for (const StreamTarget &t : config.targets) {
 		obs_data_t *o = obs_data_create();

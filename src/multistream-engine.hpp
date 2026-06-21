@@ -22,7 +22,10 @@ public:
 	void setTargets(std::vector<StreamTarget> targets);
 	void setVideoBitrate(int kbps);
 
-	void start();
+	// When `useMainEncoders` is true the outputs borrow OBS's main streaming
+	// encoders (zero extra encode), which only exist while OBS is streaming —
+	// that is the case in the "sync with OBS" mode. Otherwise we create our own.
+	void start(bool useMainEncoders = false);
 	void stop();
 	bool running() const;
 
@@ -40,6 +43,7 @@ private:
 struct StreamConfig {
 	std::vector<StreamTarget> targets;
 	int videoBitrate = 6000;
+	bool syncWithObs = false; // start/stop together with OBS's own streaming
 };
 
 StreamConfig LoadStreamConfig();

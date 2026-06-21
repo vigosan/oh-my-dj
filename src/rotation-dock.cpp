@@ -4,6 +4,7 @@
 #include <obs-frontend-api.h>
 #include <obs-module.h>
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -33,7 +34,8 @@ QComboBox *Combo(QTableWidget *table, int row, int col)
 
 RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 {
-	setObjectName("oh-my-dj-dock");
+	setObjectName("oh-my-dj-cameras");
+	setMinimumWidth(760);
 
 	table_ = new QTableWidget(this);
 	table_->setColumnCount(ColCount);
@@ -57,27 +59,32 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	editRow->addWidget(downBtn);
 	editRow->addStretch();
 
-	runButton_ = new QPushButton(T("OhMyDj.Btn.Start"), this);
-	status_ = new QLabel(T("OhMyDj.Status.Stopped"), this);
+	enable_ = new QCheckBox(T("OhMyDj.Rotation.Enable"), this);
+	status_ = new QLabel(this);
 
 	auto *layout = new QVBoxLayout(this);
 	layout->addWidget(table_);
 	layout->addLayout(editRow);
-	layout->addWidget(runButton_);
+	layout->addWidget(enable_);
 	layout->addWidget(status_);
 
 	connect(addBtn, &QPushButton::clicked, this, &RotationDock::onAdd);
 	connect(removeBtn, &QPushButton::clicked, this, &RotationDock::onRemove);
 	connect(upBtn, &QPushButton::clicked, this, [this]() { onMove(-1); });
 	connect(downBtn, &QPushButton::clicked, this, [this]() { onMove(1); });
-	connect(runButton_, &QPushButton::clicked, this, &RotationDock::onToggleRun);
-	connect(&engine_, &RotationEngine::stepActivated, this, &RotationDock::onStepActivated);
-	connect(&engine_, &RotationEngine::runningChanged, this, &RotationDock::onRunningChanged);
+	connect(enable_, &QCheckBox::toggled, this, &RotationDock::onEnableToggled);
+	connect(&engine_, &RotationEngine::stepChanged, this, &RotationDock::onStepChanged);
 
 	updating_ = true;
-	for (const RotationStep &step : LoadRotationSteps())
+	RotationConfig config = LoadRotationConfig();
+	for (const RotationStep &step : config.steps)
 		addRow(step);
+	enable_->setChecked(config.enabled);
 	updating_ = false;
+
+	engine_.setSteps(collectSteps());
+	engine_.setEnabled(config.enabled);
+	onStepChanged(engine_.currentIndex());
 }
 
 QStringList RotationDock::sceneNames() const
@@ -98,7 +105,7 @@ void RotationDock::fillSceneCombo(QComboBox *combo, const QString &selected) con
 	combo->clear();
 	combo->addItems(sceneNames());
 	if (!selected.isEmpty() && combo->findText(selected) < 0)
-		combo->addItem(selected); // keep a scene that was removed from OBS
+		combo->addItem(selected);
 	combo->setCurrentIndex(qMax(0, combo->findText(selected)));
 	combo->blockSignals(false);
 }
@@ -107,7 +114,7 @@ void RotationDock::fillOnExpireCombo(QComboBox *combo, const QString &selected) 
 {
 	combo->blockSignals(true);
 	combo->clear();
-	combo->addItem(T("OhMyDj.OnExpire.Next")); // index 0 => advance + loop
+	combo->addItem(T("OhMyDj.OnExpire.Next"));
 	combo->addItems(sceneNames());
 	if (!selected.isEmpty() && combo->findText(selected) < 0)
 		combo->addItem(selected);
@@ -204,36 +211,39 @@ void RotationDock::onEdited()
 {
 	if (updating_)
 		return;
-	SaveRotationSteps(collectSteps());
+	const std::vector<RotationStep> steps = collectSteps();
+	engine_.setSteps(steps);
+	SaveRotationConfig({steps, enable_->isChecked()});
 }
 
-void RotationDock::onToggleRun()
+void RotationDock::onEnableToggled(bool enabled)
 {
-	if (engine_.running()) {
-		engine_.stop();
+	engine_.setEnabled(enabled);
+	if (!updating_)
+		SaveRotationConfig({collectSteps(), enabled});
+	onStepChanged(engine_.currentIndex());
+}
+
+void RotationDock::onStepChanged(int index)
+{
+	if (!enable_->isChecked()) {
+		table_->clearSelection();
+		status_->setText(T("OhMyDj.Rotation.Disabled"));
 		return;
 	}
-	engine_.setSteps(collectSteps());
-	engine_.start();
-}
-
-void RotationDock::onRunningChanged(bool running)
-{
-	runButton_->setText(running ? T("OhMyDj.Btn.Stop") : T("OhMyDj.Btn.Start"));
-	table_->setEnabled(!running);
-	if (!running)
-		status_->setText(T("OhMyDj.Status.Stopped"));
-}
-
-void RotationDock::onStepActivated(int index)
-{
 	if (index < 0 || index >= table_->rowCount()) {
 		table_->clearSelection();
+		status_->setText(T("OhMyDj.Rotation.Waiting"));
 		return;
 	}
 	table_->selectRow(index);
 	const QString scene = Combo(table_, index, ColScene)->currentText();
-	status_->setText(T("OhMyDj.Status.Playing").arg(scene));
+	status_->setText(T("OhMyDj.Rotation.Active").arg(scene));
+}
+
+void RotationDock::onSceneChanged()
+{
+	engine_.onSceneChanged();
 }
 
 void RotationDock::refreshScenes()
@@ -251,7 +261,7 @@ void RotationDock::refreshScenes()
 
 void RotationDock::persist()
 {
-	SaveRotationSteps(collectSteps());
+	SaveRotationConfig({collectSteps(), enable_->isChecked()});
 }
 
 } // namespace ohmydj

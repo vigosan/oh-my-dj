@@ -3,14 +3,17 @@
 #include <QObject>
 #include <QTimer>
 
+#include <string>
 #include <vector>
 
 #include "rotation-step.hpp"
 
 namespace ohmydj {
 
-// Drives the rotation on the UI thread via a single-shot QTimer, so every
-// scene switch happens where libobs expects it.
+// Reactive scene rotation: the DJ only enables/disables it. While enabled, the
+// flow engages automatically whenever the program scene matches one of the
+// steps, then advances + loops on its own. Switching to a scene outside the
+// flow simply parks it until a flow scene is shown again.
 class RotationEngine : public QObject {
 	Q_OBJECT
 
@@ -20,29 +23,44 @@ public:
 	void setSteps(std::vector<RotationStep> steps);
 	const std::vector<RotationStep> &steps() const { return steps_; }
 
-	void start();
-	void stop();
-	bool running() const { return running_; }
+	void setEnabled(bool enabled);
+	bool enabled() const { return enabled_; }
+
+	// Called on every OBS scene change (and once when enabled) to re-evaluate.
+	void onSceneChanged();
+
 	int currentIndex() const { return current_; }
 
 signals:
-	void runningChanged(bool running);
-	void stepActivated(int index);
+	// index of the active step, or -1 when parked/idle.
+	void stepChanged(int index);
 
 private slots:
 	void onTimeout();
 
 private:
-	void activate(int index);
+	void evaluate();
+	void advance();
+	void arm(int index);
+	void park();
 
 	std::vector<RotationStep> steps_;
 	QTimer timer_;
+	bool enabled_ = false;
 	int current_ = -1;
-	bool running_ = false;
+
+	// Distinguish scene changes we trigger ourselves from the DJ's.
+	bool expectingSelfSwitch_ = false;
+	std::string pendingScene_;
 };
 
-// Persistence (per OBS profile). Returns false on a missing/empty config.
-std::vector<RotationStep> LoadRotationSteps();
-void SaveRotationSteps(const std::vector<RotationStep> &steps);
+// Persistence (per OBS profile): the flow plus its enabled state.
+struct RotationConfig {
+	std::vector<RotationStep> steps;
+	bool enabled = false;
+};
+
+RotationConfig LoadRotationConfig();
+void SaveRotationConfig(const RotationConfig &config);
 
 } // namespace ohmydj

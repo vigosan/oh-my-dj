@@ -7,23 +7,24 @@
 #include "rotation-engine.hpp"
 
 class QTableWidget;
-class QPushButton;
+class QCheckBox;
 class QLabel;
 class QComboBox;
 
 namespace ohmydj {
 
-// The single "Oh My DJ" dock: edit the scene-rotation flow and run it.
+// The "Cameras" tab: edit the scene-rotation flow. There is no Start/Stop —
+// the DJ just enables it, and the flow engages whenever the program scene
+// matches a step.
 class RotationDock : public QWidget {
 	Q_OBJECT
 
 public:
 	explicit RotationDock(QWidget *parent = nullptr);
 
-	// Repopulate scene pickers from the scenes currently in OBS.
-	void refreshScenes();
-	// Flush the current flow to disk (used on OBS exit).
-	void persist();
+	void refreshScenes();   // repopulate scene pickers from OBS
+	void onSceneChanged();  // forwarded from the OBS frontend event
+	void persist();         // flush to disk (on OBS exit)
 
 private:
 	void addRow(const RotationStep &step);
@@ -35,14 +36,13 @@ private:
 	void onAdd();
 	void onRemove();
 	void onMove(int delta);
-	void onToggleRun();
 	void onEdited();
-	void onStepActivated(int index);
-	void onRunningChanged(bool running);
+	void onEnableToggled(bool enabled);
+	void onStepChanged(int index);
 
 	RotationEngine engine_;
 	QTableWidget *table_;
-	QPushButton *runButton_;
+	QCheckBox *enable_;
 	QLabel *status_;
 	bool updating_ = false;
 };

@@ -4,13 +4,11 @@
 
 #include <QCheckBox>
 #include <QComboBox>
-#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QSpinBox>
 #include <QTableWidget>
 #include <QVBoxLayout>
 
@@ -34,7 +32,6 @@ QLineEdit *Edit(QTableWidget *table, int row, int col)
 
 QCheckBox *ActiveBox(QTableWidget *table, int row)
 {
-	// The checkbox is centred inside a wrapper widget (see addRow).
 	QWidget *cell = table->cellWidget(row, ColActive);
 	return cell ? cell->findChild<QCheckBox *>() : nullptr;
 }
@@ -61,13 +58,20 @@ QString StatusText(StreamStatus status)
 MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 {
 	setObjectName("oh-my-dj-stream");
+	setMinimumWidth(760);
 
 	table_ = new QTableWidget(this);
 	table_->setColumnCount(ColCount);
 	table_->setHorizontalHeaderLabels({T("OhMyDj.Stream.Col.Name"), T("OhMyDj.Stream.Col.Url"),
 					   T("OhMyDj.Stream.Col.Key"), T("OhMyDj.Stream.Col.Active"),
 					   T("OhMyDj.Stream.Col.Status")});
-	table_->horizontalHeader()->setSectionResizeMode(ColUrl, QHeaderView::Stretch);
+	QHeaderView *header = table_->horizontalHeader();
+	header->setSectionResizeMode(ColName, QHeaderView::Interactive);
+	header->setSectionResizeMode(ColUrl, QHeaderView::Stretch);
+	header->setSectionResizeMode(ColKey, QHeaderView::Stretch);
+	header->setSectionResizeMode(ColActive, QHeaderView::ResizeToContents);
+	header->setSectionResizeMode(ColStatus, QHeaderView::ResizeToContents);
+	table_->setColumnWidth(ColName, 130);
 	table_->verticalHeader()->setVisible(false);
 	table_->setSelectionBehavior(QAbstractItemView::SelectRows);
 	table_->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -80,31 +84,27 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 	editRow->addWidget(removeBtn);
 	editRow->addStretch();
 
-	bitrate_ = new QSpinBox(this);
-	bitrate_->setRange(500, 50000);
-	bitrate_->setSingleStep(500);
-	auto *bitrateRow = new QFormLayout();
-	bitrateRow->addRow(T("OhMyDj.Stream.Bitrate"), bitrate_);
-
-	runButton_ = new QPushButton(T("OhMyDj.Stream.Btn.Start"), this);
+	sync_ = new QCheckBox(T("OhMyDj.Stream.Sync"), this);
+	auto *hint = new QLabel(T("OhMyDj.Stream.Hint"), this);
+	hint->setWordWrap(true);
+	hint->setEnabled(false);
 
 	auto *layout = new QVBoxLayout(this);
 	layout->addWidget(table_);
 	layout->addLayout(editRow);
-	layout->addLayout(bitrateRow);
-	layout->addWidget(runButton_);
+	layout->addWidget(sync_);
+	layout->addWidget(hint);
 
 	connect(addBtn, &QPushButton::clicked, this, &MultistreamDock::onAdd);
 	connect(removeBtn, &QPushButton::clicked, this, &MultistreamDock::onRemove);
-	connect(runButton_, &QPushButton::clicked, this, &MultistreamDock::onToggleRun);
-	connect(bitrate_, &QSpinBox::valueChanged, this, &MultistreamDock::onEdited);
+	connect(sync_, &QCheckBox::toggled, this, &MultistreamDock::onSyncToggled);
 	connect(&engine_, &MultistreamEngine::runningChanged, this, &MultistreamDock::onRunningChanged);
 	connect(&engine_, &MultistreamEngine::targetStatusChanged, this,
 		&MultistreamDock::onTargetStatusChanged);
 
 	updating_ = true;
 	StreamConfig config = LoadStreamConfig();
-	bitrate_->setValue(config.videoBitrate);
+	sync_->setChecked(config.syncWithObs);
 	for (const StreamTarget &target : config.targets)
 		addRow(target);
 	updating_ = false;
@@ -131,19 +131,6 @@ void MultistreamDock::addRow(const StreamTarget &target)
 	table_->setCellWidget(row, ColName, platform);
 	table_->setCellWidget(row, ColUrl, url);
 
-	// Picking a known platform fills in its RTMP URL, unless the user typed a
-	// custom one (IsPresetUrl guards against clobbering hand-edited servers).
-	connect(platform, &QComboBox::currentIndexChanged, this, [this, platform, url](int) {
-		if (updating_)
-			return;
-		const QString presetUrl =
-			QString::fromStdString(PresetUrl(platform->currentText().toStdString()));
-		if (!presetUrl.isEmpty() && IsPresetUrl(url->text().trimmed().toStdString()))
-			url->setText(presetUrl);
-		onEdited();
-	});
-	connect(platform->lineEdit(), &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
-
 	auto *key = new QLineEdit(QString::fromStdString(target.key));
 	key->setEchoMode(QLineEdit::Password);
 	table_->setCellWidget(row, ColKey, key);
@@ -161,6 +148,17 @@ void MultistreamDock::addRow(const StreamTarget &target)
 	status->setAlignment(Qt::AlignCenter);
 	table_->setCellWidget(row, ColStatus, status);
 
+	// Picking a known platform fills its RTMP URL, unless the user typed one.
+	connect(platform, &QComboBox::currentIndexChanged, this, [this, platform, url](int) {
+		if (updating_)
+			return;
+		const QString presetUrl =
+			QString::fromStdString(PresetUrl(platform->currentText().toStdString()));
+		if (!presetUrl.isEmpty() && IsPresetUrl(url->text().trimmed().toStdString()))
+			url->setText(presetUrl);
+		onEdited();
+	});
+	connect(platform->lineEdit(), &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 	connect(url, &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 	connect(key, &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 	connect(active, &QCheckBox::toggled, this, &MultistreamDock::onEdited);
@@ -186,7 +184,7 @@ StreamConfig MultistreamDock::collectConfig() const
 {
 	StreamConfig config;
 	config.targets = collectTargets();
-	config.videoBitrate = bitrate_->value();
+	config.syncWithObs = sync_->isChecked();
 	return config;
 }
 
@@ -212,23 +210,30 @@ void MultistreamDock::onEdited()
 	SaveStreamConfig(collectConfig());
 }
 
-void MultistreamDock::onToggleRun()
+void MultistreamDock::onSyncToggled(bool enabled)
 {
-	if (engine_.running()) {
+	if (!updating_)
+		SaveStreamConfig(collectConfig());
+	if (!enabled && engine_.running())
 		engine_.stop();
+}
+
+void MultistreamDock::onObsStreamingStarted()
+{
+	if (!sync_->isChecked())
 		return;
-	}
-	StreamConfig config = collectConfig();
-	engine_.setVideoBitrate(config.videoBitrate);
-	engine_.setTargets(config.targets);
-	engine_.start();
+	engine_.setTargets(collectTargets());
+	engine_.start(/*useMainEncoders=*/true);
+}
+
+void MultistreamDock::onObsStreamingStopping()
+{
+	engine_.stop();
 }
 
 void MultistreamDock::onRunningChanged(bool running)
 {
-	runButton_->setText(running ? T("OhMyDj.Stream.Btn.Stop") : T("OhMyDj.Stream.Btn.Start"));
 	table_->setEnabled(!running);
-	bitrate_->setEnabled(!running);
 	if (!running) {
 		for (int row = 0; row < table_->rowCount(); ++row) {
 			if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(row, ColStatus)))

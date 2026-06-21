@@ -7,18 +7,21 @@
 #include "multistream-engine.hpp"
 
 class QTableWidget;
-class QPushButton;
-class QSpinBox;
+class QCheckBox;
 
 namespace ohmydj {
 
-// The "Streaming" tab: edit destinations and go live to all of them at once.
+// The "Streaming" tab: a list of destinations that go live together with OBS.
+// No bitrate, no manual button — it reuses OBS's own encoder and follows OBS's
+// Start/Stop Streaming. The DJ only ticks the platforms and the sync switch.
 class MultistreamDock : public QWidget {
 	Q_OBJECT
 
 public:
 	explicit MultistreamDock(QWidget *parent = nullptr);
 
+	void onObsStreamingStarted();  // forwarded from OBS frontend events
+	void onObsStreamingStopping();
 	void persist();
 
 private:
@@ -28,15 +31,14 @@ private:
 
 	void onAdd();
 	void onRemove();
-	void onToggleRun();
 	void onEdited();
+	void onSyncToggled(bool enabled);
 	void onRunningChanged(bool running);
 	void onTargetStatusChanged(int index, int status);
 
 	MultistreamEngine engine_;
 	QTableWidget *table_;
-	QSpinBox *bitrate_;
-	QPushButton *runButton_;
+	QCheckBox *sync_;
 	bool updating_ = false;
 };
 

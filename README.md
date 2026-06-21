@@ -10,13 +10,18 @@ One dock, two tabs: **Cameras** and **Streaming**.
 
 ## Status
 
+Both features are **automatic**: the DJ only enables them. There are no manual
+Start/Stop buttons — the plugin reacts to OBS.
+
 - [x] **Scene rotation** — define a flow of scenes, each shown for a chosen
   amount of *seconds / minutes / hours*, then loop. Per step you can override
   what happens when the time ends: advance to the next scene (loop) or jump to a
-  specific scene.
+  specific scene. Tick *Automatic rotation* and the flow engages on its own
+  whenever the program scene matches a step.
 - [x] **Multistream** — push the OBS output to Twitch, YouTube, etc. at once.
-  One shared encoder feeds every destination (one encode, many outputs), so
-  extra platforms cost bandwidth, not CPU. One button goes live everywhere.
+  It reuses OBS's own encoder (so it inherits OBS's resolution/bitrate, zero
+  extra CPU) and follows OBS: enabled platforms go live when you press *Start
+  Streaming* and stop when you stop it.
 
 ### Scene rotation — how it works
 
@@ -28,9 +33,11 @@ The dock shows a table of steps:
 | CAM 2 | 30 | seconds | Next scene (loop) |
 | CAM 3 | 1 | minutes | Next scene (loop) |
 
-Press **Start rotation** and Oh My DJ switches the program scene on schedule,
-looping back to the top. "When it ends" defaults to *next scene*; pick a scene
-instead to jump straight to it (e.g. always return to your main camera).
+Tick **Automatic rotation**. When you switch the program scene to one of the
+scenes in the flow, its timer starts and Oh My DJ advances on schedule, looping
+back to the top. Switch to a scene that isn't in the flow and it simply waits.
+"When it ends" defaults to *next scene*; pick a scene instead to jump straight
+to it (e.g. always return to your main camera).
 
 The flow is saved per OBS profile in `oh-my-dj.json`.
 
@@ -44,9 +51,10 @@ The **Streaming** tab is a list of destinations:
 | YouTube | rtmp://a.rtmp.youtube.com/live2 | •••• | ☑ | ● LIVE |
 
 Pick a platform (Twitch, YouTube, Facebook Live, …) and its RTMP server URL is
-filled in for you — just paste the stream key. Set a video bitrate, press **Go
-live everywhere**, and Oh My DJ starts one RTMP output per enabled destination,
-all sharing a single video/audio encode. Status updates live per destination.
+filled in for you — just paste the stream key and tick it **On**. Enable **Sync
+with OBS streaming**: now when you press *Start Streaming* in OBS, every enabled
+platform goes live too, reusing OBS's encoder (same resolution/bitrate, no extra
+encode), and stops when you stop OBS. Status updates live per destination.
 Saved per OBS profile in `oh-my-dj-stream.json`.
 
 ## Testing
