@@ -43,6 +43,8 @@ target_sources(
   ${CMAKE_PROJECT_NAME}
   PRIVATE
     src/plugin-main.cpp
+    src/about-tab.hpp
+    src/about-tab.cpp
     src/duration.hpp
     src/duration.cpp
     src/rotation-step.hpp

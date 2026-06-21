@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTabWidget>
 
+#include "about-tab.hpp"
 #include "multistream-dock.hpp"
 #include "rotation-dock.hpp"
 
@@ -70,6 +71,7 @@ bool obs_module_load(void)
 	tabs->setMinimumWidth(780);
 	tabs->addTab(g_rotation, obs_module_text("OhMyDj.Tab.Cameras"));
 	tabs->addTab(g_multistream, obs_module_text("OhMyDj.Tab.Streaming"));
+	tabs->addTab(ohmydj::CreateAboutTab(), obs_module_text("OhMyDj.Tab.About"));
 
 	if (!obs_frontend_add_dock_by_id("oh-my-dj-dock", obs_module_text("OhMyDj.Dock.Title"), tabs)) {
 		delete tabs;
