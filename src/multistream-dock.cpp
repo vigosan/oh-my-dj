@@ -131,6 +131,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 	for (const StreamTarget &target : config.targets)
 		addRow(target);
 	updating_ = false;
+	emitSummary();
 }
 
 void MultistreamDock::addRow(const StreamTarget &target)
@@ -232,6 +233,26 @@ void MultistreamDock::onEdited()
 	if (updating_)
 		return;
 	SaveStreamConfig(collectConfig());
+	emitSummary();
+}
+
+void MultistreamDock::emitSummary()
+{
+	QStringList names;
+	QList<int> statuses;
+	const std::vector<StreamTarget> targets = collectTargets();
+	for (int i = 0; i < static_cast<int>(targets.size()); ++i) {
+		names << QString::fromStdString(targets[i].name);
+		statuses << (i < static_cast<int>(statuses_.size())
+				     ? statuses_[i]
+				     : static_cast<int>(StreamStatus::Idle));
+	}
+	emit summaryChanged(names, statuses);
+}
+
+void MultistreamDock::pushSummary()
+{
+	emitSummary();
 }
 
 void MultistreamDock::onSyncToggled(bool enabled)
@@ -259,11 +280,13 @@ void MultistreamDock::onRunningChanged(bool running)
 {
 	table_->setEnabled(!running);
 	if (!running) {
+		statuses_.assign(table_->rowCount(), static_cast<int>(StreamStatus::Idle));
 		for (int row = 0; row < table_->rowCount(); ++row) {
 			if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(row, ColStatus)))
 				ApplyStatus(label, StreamStatus::Idle);
 		}
 	}
+	emitSummary();
 }
 
 void MultistreamDock::onTargetStatusChanged(int index, int status)
@@ -272,6 +295,10 @@ void MultistreamDock::onTargetStatusChanged(int index, int status)
 		return;
 	if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(index, ColStatus)))
 		ApplyStatus(label, static_cast<StreamStatus>(status));
+	if (index >= static_cast<int>(statuses_.size()))
+		statuses_.resize(index + 1, static_cast<int>(StreamStatus::Idle));
+	statuses_[index] = status;
+	emitSummary();
 }
 
 void MultistreamDock::persist()

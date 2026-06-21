@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QWidget>
+#include <QList>
+#include <QStringList>
 
 #include <vector>
 
@@ -23,11 +25,18 @@ public:
 	void onObsStreamingStarted();  // forwarded from OBS frontend events
 	void onObsStreamingStopping();
 	void persist();
+	void pushSummary();  // re-broadcast platforms + status (for late subscribers)
+
+signals:
+	// One entry per configured platform, parallel lists: display name and its
+	// current StreamStatus (as int).
+	void summaryChanged(const QStringList &names, const QList<int> &statuses);
 
 private:
 	void addRow(const StreamTarget &target);
 	std::vector<StreamTarget> collectTargets() const;
 	StreamConfig collectConfig() const;
+	void emitSummary();
 
 	void onAdd();
 	void onRemove();
@@ -39,6 +48,7 @@ private:
 	MultistreamEngine engine_;
 	QTableWidget *table_;
 	QCheckBox *sync_;
+	std::vector<int> statuses_;
 	bool updating_ = false;
 };
 

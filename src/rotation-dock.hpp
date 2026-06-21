@@ -26,6 +26,10 @@ public:
 	void refreshScenes();   // repopulate scene pickers from OBS
 	void onSceneChanged();  // forwarded from the OBS frontend event
 	void persist();         // flush to disk (on OBS exit)
+	void pushSummary();     // re-broadcast the current status (for late subscribers)
+
+signals:
+	void summaryChanged(const QString &line);
 
 private:
 	void addRow(const RotationStep &step);

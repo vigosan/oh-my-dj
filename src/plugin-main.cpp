@@ -1,11 +1,14 @@
 #include <obs-module.h>
 #include <obs-frontend-api.h>
 
+#include <QDialog>
 #include <QMainWindow>
 #include <QTabWidget>
+#include <QVBoxLayout>
 
 #include "about-tab.hpp"
 #include "multistream-dock.hpp"
+#include "overview-dock.hpp"
 #include "rotation-dock.hpp"
 
 OBS_DECLARE_MODULE()
@@ -20,6 +23,7 @@ namespace {
 
 ohmydj::RotationDock *g_rotation = nullptr;
 ohmydj::MultistreamDock *g_multistream = nullptr;
+QDialog *g_settings = nullptr;
 
 void OnFrontendEvent(enum obs_frontend_event event, void *)
 {
@@ -66,15 +70,28 @@ bool obs_module_load(void)
 	g_rotation = new ohmydj::RotationDock();
 	g_multistream = new ohmydj::MultistreamDock();
 
-	auto *tabs = new QTabWidget(main);
-	tabs->setObjectName("oh-my-dj-dock");
-	tabs->setMinimumWidth(780);
+	auto *tabs = new QTabWidget();
+	tabs->setObjectName("oh-my-dj-tabs");
 	tabs->addTab(g_rotation, obs_module_text("OhMyDj.Tab.Cameras"));
 	tabs->addTab(g_multistream, obs_module_text("OhMyDj.Tab.Streaming"));
 	tabs->addTab(ohmydj::CreateAboutTab(), obs_module_text("OhMyDj.Tab.About"));
 
-	if (!obs_frontend_add_dock_by_id("oh-my-dj-dock", obs_module_text("OhMyDj.Dock.Title"), tabs)) {
-		delete tabs;
+	// Settings live in a floating window (opened from the overview), not a dock,
+	// so the always-on overview is what the DJ anchors in their layout.
+	g_settings = new QDialog(main);
+	g_settings->setWindowTitle(obs_module_text("OhMyDj.Dock.Title"));
+	g_settings->resize(820, 480);
+	auto *settingsLayout = new QVBoxLayout(g_settings);
+	settingsLayout->setContentsMargins(0, 0, 0, 0);
+	settingsLayout->addWidget(tabs);
+
+	auto *overview = new ohmydj::OverviewDock(g_rotation, g_multistream, g_settings);
+
+	if (!obs_frontend_add_dock_by_id("oh-my-dj-overview", obs_module_text("OhMyDj.Overview.Title"),
+					 overview)) {
+		delete overview;
+		delete g_settings;
+		g_settings = nullptr;
 		g_rotation = nullptr;
 		g_multistream = nullptr;
 		return false;
@@ -88,6 +105,12 @@ bool obs_module_load(void)
 void obs_module_unload(void)
 {
 	obs_frontend_remove_event_callback(OnFrontendEvent, nullptr);
+	if (g_settings) {
+		delete g_settings; // also destroys the config tabs and both engines
+		g_settings = nullptr;
+		g_rotation = nullptr;
+		g_multistream = nullptr;
+	}
 	blog(LOG_INFO, "[oh-my-dj] unloaded");
 }
 

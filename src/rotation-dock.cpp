@@ -252,25 +252,33 @@ void RotationDock::onStepChanged(int index)
 
 void RotationDock::refreshStatus()
 {
+	QString text;
 	if (!enable_->isChecked()) {
-		status_->setText(T("OhMyDj.Rotation.Disabled"));
-		return;
+		text = T("OhMyDj.Rotation.Disabled");
+	} else {
+		const int index = engine_.currentIndex();
+		if (index < 0 || index >= table_->rowCount()) {
+			text = T("OhMyDj.Rotation.Waiting");
+		} else {
+			const QString scene = Combo(table_, index, ColScene)->currentText();
+			const int secs = engine_.remainingSeconds();
+			const int next = engine_.nextIndex();
+			if (secs < 0 || next < 0 || next >= table_->rowCount()) {
+				text = T("OhMyDj.Rotation.Active").arg(scene);
+			} else {
+				const QString clock = QString::fromStdString(FormatClock(secs));
+				const QString nextScene = Combo(table_, next, ColScene)->currentText();
+				text = T("OhMyDj.Rotation.ActiveCountdown").arg(scene, clock, nextScene);
+			}
+		}
 	}
-	const int index = engine_.currentIndex();
-	if (index < 0 || index >= table_->rowCount()) {
-		status_->setText(T("OhMyDj.Rotation.Waiting"));
-		return;
-	}
-	const QString scene = Combo(table_, index, ColScene)->currentText();
-	const int secs = engine_.remainingSeconds();
-	const int next = engine_.nextIndex();
-	if (secs < 0 || next < 0 || next >= table_->rowCount()) {
-		status_->setText(T("OhMyDj.Rotation.Active").arg(scene));
-		return;
-	}
-	const QString clock = QString::fromStdString(FormatClock(secs));
-	const QString nextScene = Combo(table_, next, ColScene)->currentText();
-	status_->setText(T("OhMyDj.Rotation.ActiveCountdown").arg(scene, clock, nextScene));
+	status_->setText(text);
+	emit summaryChanged(text);
+}
+
+void RotationDock::pushSummary()
+{
+	refreshStatus();
 }
 
 void RotationDock::onSceneChanged()

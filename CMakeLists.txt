@@ -60,6 +60,8 @@ target_sources(
     src/multistream-engine.cpp
     src/multistream-dock.hpp
     src/multistream-dock.cpp
+    src/overview-dock.hpp
+    src/overview-dock.cpp
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
