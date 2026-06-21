@@ -4,11 +4,15 @@
 #include <obs-frontend-api.h>
 #include <util/platform.h>
 
+#include <QTimer>
+
 #include <string>
 
 namespace ohmydj {
 
 namespace {
+
+constexpr int kReconnectDelayMs = 5000;
 
 std::string ConfigFilePath()
 {
@@ -63,7 +67,17 @@ static void OnOutputStop(void *data, calldata_t *cd)
 {
 	auto *ctx = static_cast<OutputContext *>(data);
 	const long long code = calldata_int(cd, "code");
-	EmitStatus(ctx, code == OBS_OUTPUT_SUCCESS ? StreamStatus::Stopped : StreamStatus::Error);
+	if (code == OBS_OUTPUT_SUCCESS) {
+		EmitStatus(ctx, StreamStatus::Stopped);
+		return;
+	}
+	// Unexpected drop (network blip, server reset): flag it and retry. Our own
+	// stop() disconnects this handler first, so this only fires on real drops.
+	EmitStatus(ctx, StreamStatus::Error);
+	MultistreamEngine *engine = ctx->engine;
+	const int index = ctx->index;
+	QMetaObject::invokeMethod(
+		engine, [engine, index]() { engine->reconnect(index); }, Qt::QueuedConnection);
 }
 
 MultistreamEngine::MultistreamEngine(QObject *parent) : QObject(parent), d_(std::make_unique<Impl>()) {}
@@ -196,6 +210,25 @@ void MultistreamEngine::stop()
 
 	d_->running = false;
 	emit runningChanged(false);
+}
+
+void MultistreamEngine::reconnect(int index)
+{
+	if (!d_->running)
+		return;
+
+	emit targetStatusChanged(index, static_cast<int>(StreamStatus::Connecting));
+	QTimer::singleShot(kReconnectDelayMs, this, [this, index]() {
+		if (!d_->running)
+			return;
+		for (OutputContext *ctx : d_->outputs) {
+			if (ctx->index != index)
+				continue;
+			if (!obs_output_start(ctx->output))
+				emit targetStatusChanged(index, static_cast<int>(StreamStatus::Error));
+			return;
+		}
+	});
 }
 
 StreamConfig LoadStreamConfig()

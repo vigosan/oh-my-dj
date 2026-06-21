@@ -29,6 +29,10 @@ public:
 	void stop();
 	bool running() const;
 
+	// Invoked from the output's stop callback after an unexpected drop: retries
+	// that one destination after a short delay while we are still meant to be live.
+	void reconnect(int index);
+
 signals:
 	void runningChanged(bool running);
 	// `status` is a StreamStatus; `index` refers to the target's row.
