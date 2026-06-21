@@ -42,6 +42,18 @@ static void test_unit_conversion()
 	CHECK(UnitFromInt(99) == DurationUnit::Seconds); // out-of-range clamps to a safe default
 }
 
+static void test_format_clock()
+{
+	std::printf("clock formatting for the countdown\n");
+	CHECK(FormatClock(0) == "0:00");
+	CHECK(FormatClock(9) == "0:09");
+	CHECK(FormatClock(75) == "1:15");
+	CHECK(FormatClock(600) == "10:00");
+	CHECK(FormatClock(3600) == "1:00:00");
+	CHECK(FormatClock(3661) == "1:01:01");
+	CHECK(FormatClock(-5) == "0:00"); // never show a negative countdown
+}
+
 static void test_step_seconds()
 {
 	std::printf("step duration in seconds\n");
@@ -132,6 +144,7 @@ static void test_resolve_repeated_scene_cycle()
 int main()
 {
 	test_unit_conversion();
+	test_format_clock();
 	test_step_seconds();
 	test_resolve_loop();
 	test_resolve_jump();

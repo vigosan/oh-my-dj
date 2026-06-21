@@ -12,7 +12,10 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTableWidget>
+#include <QTimer>
 #include <QVBoxLayout>
+
+#include "duration.hpp"
 
 namespace ohmydj {
 
@@ -61,12 +64,20 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 
 	enable_ = new QCheckBox(T("OhMyDj.Rotation.Enable"), this);
 	status_ = new QLabel(this);
+	tick_ = new QTimer(this);
+	tick_->setInterval(1000);
+
+	status_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+	auto *statusRow = new QHBoxLayout();
+	statusRow->addWidget(enable_);
+	statusRow->addStretch();
+	statusRow->addWidget(status_);
 
 	auto *layout = new QVBoxLayout(this);
 	layout->addWidget(table_);
 	layout->addLayout(editRow);
-	layout->addWidget(enable_);
-	layout->addWidget(status_);
+	layout->addLayout(statusRow);
 
 	connect(addBtn, &QPushButton::clicked, this, &RotationDock::onAdd);
 	connect(removeBtn, &QPushButton::clicked, this, &RotationDock::onRemove);
@@ -74,6 +85,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	connect(downBtn, &QPushButton::clicked, this, [this]() { onMove(1); });
 	connect(enable_, &QCheckBox::toggled, this, &RotationDock::onEnableToggled);
 	connect(&engine_, &RotationEngine::stepChanged, this, &RotationDock::onStepChanged);
+	connect(tick_, &QTimer::timeout, this, &RotationDock::refreshStatus);
 
 	updating_ = true;
 	RotationConfig config = LoadRotationConfig();
@@ -226,19 +238,39 @@ void RotationDock::onEnableToggled(bool enabled)
 
 void RotationDock::onStepChanged(int index)
 {
-	if (!enable_->isChecked()) {
+	const bool active = enable_->isChecked() && index >= 0 && index < table_->rowCount();
+	if (active)
+		table_->selectRow(index);
+	else
 		table_->clearSelection();
+	if (active)
+		tick_->start();
+	else
+		tick_->stop();
+	refreshStatus();
+}
+
+void RotationDock::refreshStatus()
+{
+	if (!enable_->isChecked()) {
 		status_->setText(T("OhMyDj.Rotation.Disabled"));
 		return;
 	}
+	const int index = engine_.currentIndex();
 	if (index < 0 || index >= table_->rowCount()) {
-		table_->clearSelection();
 		status_->setText(T("OhMyDj.Rotation.Waiting"));
 		return;
 	}
-	table_->selectRow(index);
 	const QString scene = Combo(table_, index, ColScene)->currentText();
-	status_->setText(T("OhMyDj.Rotation.Active").arg(scene));
+	const int secs = engine_.remainingSeconds();
+	const int next = engine_.nextIndex();
+	if (secs < 0 || next < 0 || next >= table_->rowCount()) {
+		status_->setText(T("OhMyDj.Rotation.Active").arg(scene));
+		return;
+	}
+	const QString clock = QString::fromStdString(FormatClock(secs));
+	const QString nextScene = Combo(table_, next, ColScene)->currentText();
+	status_->setText(T("OhMyDj.Rotation.ActiveCountdown").arg(scene, clock, nextScene));
 }
 
 void RotationDock::onSceneChanged()

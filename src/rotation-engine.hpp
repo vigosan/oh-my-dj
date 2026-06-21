@@ -31,6 +31,18 @@ public:
 
 	int currentIndex() const { return current_; }
 
+	// Where the flow goes when the active step ends (-1 if there is no flow).
+	int nextIndex() const { return ResolveNextIndex(steps_, current_); }
+
+	// Seconds left on the active step, or -1 when parked/idle.
+	int remainingSeconds() const
+	{
+		if (!enabled_ || current_ < 0)
+			return -1;
+		const int ms = timer_.remainingTime();
+		return ms < 0 ? -1 : (ms + 999) / 1000;
+	}
+
 signals:
 	// index of the active step, or -1 when parked/idle.
 	void stepChanged(int index);

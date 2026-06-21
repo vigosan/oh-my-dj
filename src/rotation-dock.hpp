@@ -10,6 +10,7 @@ class QTableWidget;
 class QCheckBox;
 class QLabel;
 class QComboBox;
+class QTimer;
 
 namespace ohmydj {
 
@@ -39,11 +40,13 @@ private:
 	void onEdited();
 	void onEnableToggled(bool enabled);
 	void onStepChanged(int index);
+	void refreshStatus();
 
 	RotationEngine engine_;
 	QTableWidget *table_;
 	QCheckBox *enable_;
 	QLabel *status_;
+	QTimer *tick_;
 	bool updating_ = false;
 };
 
