@@ -112,6 +112,23 @@ static void test_resolve_duplicate_target()
 	CHECK(ResolveNextIndex(flow, 0) == 1);
 }
 
+static void test_resolve_repeated_scene_cycle()
+{
+	std::printf("a scene can recur in the cycle: Main1, Main2, Main1, Main3, loop\n");
+	std::vector<RotationStep> flow = {
+		step("Main 1", 1, DurationUnit::Minutes),
+		step("Main 2", 8, DurationUnit::Minutes),
+		step("Main 1", 1, DurationUnit::Minutes),
+		step("Main 3", 1, DurationUnit::Minutes),
+	};
+	// Advancement is positional, so the second "Main 1" is its own step and
+	// leads to Main 3 rather than collapsing back onto the first occurrence.
+	CHECK(ResolveNextIndex(flow, 0) == 1); // Main 1 -> Main 2
+	CHECK(ResolveNextIndex(flow, 1) == 2); // Main 2 -> Main 1 (again)
+	CHECK(ResolveNextIndex(flow, 2) == 3); // Main 1 -> Main 3
+	CHECK(ResolveNextIndex(flow, 3) == 0); // Main 3 -> Main 1, cycle restarts
+}
+
 int main()
 {
 	test_unit_conversion();
@@ -121,6 +138,7 @@ int main()
 	test_resolve_jump_fallback();
 	test_resolve_edge_cases();
 	test_resolve_duplicate_target();
+	test_resolve_repeated_scene_cycle();
 
 	if (g_failures == 0) {
 		std::printf("\nAll rotation tests passed.\n");
