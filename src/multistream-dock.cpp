@@ -105,12 +105,18 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 	sync_->setToolTip(T("OhMyDj.Stream.SyncTip"));
 	auto *hint = new QLabel(T("OhMyDj.Stream.Hint"), this);
 	hint->setEnabled(false);
+	hint->setToolTip(T("OhMyDj.Stream.SyncTip"));
+
+	auto *syncRow = new QHBoxLayout();
+	syncRow->addWidget(sync_);
+	syncRow->addSpacing(8);
+	syncRow->addWidget(hint);
+	syncRow->addStretch();
 
 	auto *layout = new QVBoxLayout(this);
 	layout->addWidget(table_);
 	layout->addLayout(editRow);
-	layout->addWidget(sync_);
-	layout->addWidget(hint);
+	layout->addLayout(syncRow);
 
 	connect(addBtn, &QPushButton::clicked, this, &MultistreamDock::onAdd);
 	connect(removeBtn, &QPushButton::clicked, this, &MultistreamDock::onRemove);
