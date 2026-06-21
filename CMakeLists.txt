@@ -52,6 +52,8 @@ target_sources(
     src/rotation-dock.hpp
     src/rotation-dock.cpp
     src/stream-target.hpp
+    src/stream-presets.hpp
+    src/stream-presets.cpp
     src/multistream-engine.hpp
     src/multistream-engine.cpp
     src/multistream-dock.hpp

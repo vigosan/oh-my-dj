@@ -3,6 +3,7 @@
 #include <obs-module.h>
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -12,6 +13,8 @@
 #include <QSpinBox>
 #include <QTableWidget>
 #include <QVBoxLayout>
+
+#include "stream-presets.hpp"
 
 namespace ohmydj {
 
@@ -112,12 +115,34 @@ void MultistreamDock::addRow(const StreamTarget &target)
 	const int row = table_->rowCount();
 	table_->insertRow(row);
 
-	auto *name = new QLineEdit(QString::fromStdString(target.name));
-	table_->setCellWidget(row, ColName, name);
-
 	auto *url = new QLineEdit(QString::fromStdString(target.url));
 	url->setPlaceholderText("rtmp://...");
+
+	auto *platform = new QComboBox();
+	platform->setEditable(true);
+	for (const StreamPreset &preset : StreamPresets())
+		platform->addItem(QString::fromStdString(preset.label));
+	const QString name = QString::fromStdString(target.name);
+	const int presetIdx = platform->findText(name);
+	if (presetIdx >= 0)
+		platform->setCurrentIndex(presetIdx);
+	else
+		platform->setCurrentText(name);
+	table_->setCellWidget(row, ColName, platform);
 	table_->setCellWidget(row, ColUrl, url);
+
+	// Picking a known platform fills in its RTMP URL, unless the user typed a
+	// custom one (IsPresetUrl guards against clobbering hand-edited servers).
+	connect(platform, &QComboBox::currentIndexChanged, this, [this, platform, url](int) {
+		if (updating_)
+			return;
+		const QString presetUrl =
+			QString::fromStdString(PresetUrl(platform->currentText().toStdString()));
+		if (!presetUrl.isEmpty() && IsPresetUrl(url->text().trimmed().toStdString()))
+			url->setText(presetUrl);
+		onEdited();
+	});
+	connect(platform->lineEdit(), &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 
 	auto *key = new QLineEdit(QString::fromStdString(target.key));
 	key->setEchoMode(QLineEdit::Password);
@@ -136,7 +161,6 @@ void MultistreamDock::addRow(const StreamTarget &target)
 	status->setAlignment(Qt::AlignCenter);
 	table_->setCellWidget(row, ColStatus, status);
 
-	connect(name, &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 	connect(url, &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 	connect(key, &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
 	connect(active, &QCheckBox::toggled, this, &MultistreamDock::onEdited);
@@ -147,7 +171,8 @@ std::vector<StreamTarget> MultistreamDock::collectTargets() const
 	std::vector<StreamTarget> targets;
 	for (int row = 0; row < table_->rowCount(); ++row) {
 		StreamTarget t;
-		t.name = Edit(table_, row, ColName)->text().toStdString();
+		auto *platform = qobject_cast<QComboBox *>(table_->cellWidget(row, ColName));
+		t.name = platform->currentText().toStdString();
 		t.url = Edit(table_, row, ColUrl)->text().trimmed().toStdString();
 		t.key = Edit(table_, row, ColKey)->text().toStdString();
 		QCheckBox *active = ActiveBox(table_, row);

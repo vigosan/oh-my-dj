@@ -43,9 +43,11 @@ The **Streaming** tab is a list of destinations:
 | Twitch | rtmp://live.twitch.tv/app | •••• | ☑ | ● LIVE |
 | YouTube | rtmp://a.rtmp.youtube.com/live2 | •••• | ☑ | ● LIVE |
 
-Set a video bitrate, press **Go live everywhere**, and Oh My DJ starts one RTMP
-output per enabled destination, all sharing a single video/audio encode. Status
-updates live per destination. Saved per OBS profile in `oh-my-dj-stream.json`.
+Pick a platform (Twitch, YouTube, Facebook Live, …) and its RTMP server URL is
+filled in for you — just paste the stream key. Set a video bitrate, press **Go
+live everywhere**, and Oh My DJ starts one RTMP output per enabled destination,
+all sharing a single video/audio encode. Status updates live per destination.
+Saved per OBS profile in `oh-my-dj-stream.json`.
 
 ## Testing
 

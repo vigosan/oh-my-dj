@@ -20,5 +20,12 @@ add_executable(
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/rotation-step.cpp
 )
 target_include_directories(ohmydj-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-
 add_test(NAME rotation COMMAND ohmydj-tests)
+
+add_executable(
+  ohmydj-preset-tests
+  test_presets.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/stream-presets.cpp
+)
+target_include_directories(ohmydj-preset-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+add_test(NAME presets COMMAND ohmydj-preset-tests)
