@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QMainWindow>
+#include <QPointer>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
@@ -21,9 +22,13 @@ OBS_MODULE_AUTHOR("Vicent")
 
 namespace {
 
-ohmydj::RotationDock *g_rotation = nullptr;
-ohmydj::MultistreamDock *g_multistream = nullptr;
-QDialog *g_settings = nullptr;
+// QPointers auto-null when Qt destroys the widget. The settings dialog is
+// parented to the OBS main window and the docks live inside it, so OBS tears
+// them down (when the main window dies) before the module is unloaded. Tracking
+// them with QPointer keeps every null check honest and avoids a double free.
+QPointer<ohmydj::RotationDock> g_rotation;
+QPointer<ohmydj::MultistreamDock> g_multistream;
+QPointer<QDialog> g_settings;
 
 void OnFrontendEvent(enum obs_frontend_event event, void *)
 {
@@ -110,12 +115,10 @@ bool obs_module_load(void)
 void obs_module_unload(void)
 {
 	obs_frontend_remove_event_callback(OnFrontendEvent, nullptr);
-	if (g_settings) {
-		delete g_settings; // also destroys the config tabs and both engines
-		g_settings = nullptr;
-		g_rotation = nullptr;
-		g_multistream = nullptr;
-	}
+	// Only delete it if Qt hasn't already (OBS usually destroys the main window,
+	// and with it this dialog and both docks, before unloading the module).
+	if (g_settings)
+		delete g_settings; // also destroys the config tabs and both docks
 	blog(LOG_INFO, "[oh-my-dj] unloaded");
 }
 
