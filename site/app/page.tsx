@@ -211,22 +211,22 @@ function DockMock({ t }: { t: T }) {
               return (
                 <div
                   key={s.name}
-                  className={`relative flex aspect-video flex-col items-center justify-center gap-1 font-mono transition-colors duration-300 ${
+                  className={`relative aspect-video overflow-hidden font-mono transition-colors duration-300 ${
                     active ? "bg-ink text-paper" : "bg-fog text-mute"
                   }`}
                 >
-                  <Corners active={active} />
                   <CamScene index={idx} active={active} />
-                  <div className="relative z-10 flex flex-col items-center gap-1">
-                    <span className="inline-flex items-center gap-1 text-xs font-bold tracking-tight">
-                      {active && (
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
-                      )}
-                      {s.name}
-                    </span>
-                    <span className="text-[10px] tabular-nums opacity-70">
-                      {fmtDuration(s.secs)}
-                    </span>
+                  <Corners active={active} />
+                  {active && (
+                    <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
+                  )}
+                  <div
+                    className={`absolute inset-x-0 bottom-0 flex items-center justify-between px-2 py-1 ${
+                      active ? "bg-paper/15" : "bg-ink/[0.04]"
+                    }`}
+                  >
+                    <span className="text-[11px] font-bold tracking-tight">{s.name}</span>
+                    <span className="text-[10px] tabular-nums opacity-70">{fmtDuration(s.secs)}</span>
                   </div>
                 </div>
               );
@@ -266,14 +266,9 @@ function fmtDuration(secs: number) {
 }
 
 function CamScene({ index, active }: { index: number; active: boolean }) {
-  const stroke = active ? "rgba(255,255,255,0.38)" : "rgba(10,10,10,0.16)";
-  const g = {
-    fill: "none",
-    stroke,
-    strokeWidth: 1.4,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
+  // Clean, filled glyphs sitting in the upper area so the bottom label bar stays
+  // clear. Low-opacity monochrome so they read as a faint camera feed.
+  const tone = active ? "rgba(255,255,255,0.20)" : "rgba(10,10,10,0.10)";
   return (
     <svg
       viewBox="0 0 48 27"
@@ -281,29 +276,26 @@ function CamScene({ index, active }: { index: number; active: boolean }) {
       aria-hidden
     >
       {index === 0 && (
-        <g {...g}>
-          <circle cx="24" cy="8.5" r="3" />
-          <path d="M18.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
-          <line x1="7" y1="19" x2="41" y2="19" />
-          <circle cx="14" cy="16.8" r="1.8" />
-          <circle cx="34" cy="16.8" r="1.8" />
+        // Wide shot — a DJ bust
+        <g fill={tone}>
+          <circle cx="24" cy="8" r="3.4" />
+          <path d="M15.5 19c0-4.7 3.8-8 8.5-8s8.5 3.3 8.5 8z" />
         </g>
       )}
       {index === 1 && (
-        <g {...g}>
-          <line x1="6" y1="11" x2="42" y2="11" />
-          <circle cx="12" cy="19" r="2" />
-          <circle cx="19" cy="20.5" r="2" />
-          <circle cx="26" cy="19" r="2" />
-          <circle cx="33" cy="20.5" r="2" />
+        // Crowd — a row of heads
+        <g fill={tone}>
+          <circle cx="14" cy="12.5" r="2.4" />
+          <circle cx="20.7" cy="12.5" r="2.4" />
+          <circle cx="27.3" cy="12.5" r="2.4" />
+          <circle cx="34" cy="12.5" r="2.4" />
         </g>
       )}
       {index === 2 && (
-        <g {...g}>
-          <circle cx="21" cy="14" r="8.5" />
-          <circle cx="21" cy="14" r="1.6" />
-          <line x1="34" y1="4.5" x2="25.5" y2="11.5" />
-          <circle cx="34" cy="4.5" r="1" />
+        // Close-up — a lens / vinyl ring
+        <g>
+          <circle cx="24" cy="11.5" r="6.5" fill="none" stroke={tone} strokeWidth="2.4" />
+          <circle cx="24" cy="11.5" r="1.7" fill={tone} />
         </g>
       )}
     </svg>
@@ -447,14 +439,18 @@ function useLatestRelease(): ReleaseInfo | null {
   const [info, setInfo] = useState<ReleaseInfo | null>(null);
   useEffect(() => {
     let active = true;
-    fetch("https://api.github.com/repos/vigosan/oh-my-dj/releases/latest", {
+    fetch("https://api.github.com/repos/vigosan/oh-my-dj/releases?per_page=100", {
       headers: { Accept: "application/vnd.github+json" },
     })
       .then((r) => (r.ok ? r.json() : null))
-      .then((rel) => {
-        if (!active || !rel?.assets) return;
+      .then((releases) => {
+        if (!active || !Array.isArray(releases) || releases.length === 0) return;
+        const latest = releases.find(
+          (rel: { draft?: boolean; prerelease?: boolean }) => !rel.draft && !rel.prerelease,
+        );
+        if (!latest?.assets) return;
         const find = (test: (n: string) => boolean) =>
-          rel.assets.find((a: { name: string }) => test(a.name));
+          latest.assets.find((a: { name: string }) => test(a.name));
         const assets: Record<string, ReleaseAsset> = {};
         const add = (
           os: string,
@@ -465,9 +461,14 @@ function useLatestRelease(): ReleaseInfo | null {
         add("macOS", find((n) => n.endsWith(".pkg")));
         add("Windows", find((n) => n.toLowerCase().includes("windows") && n.endsWith(".zip")));
         add("Linux", find((n) => n.endsWith(".deb")));
-        const total = rel.assets.reduce(
-          (s: number, a: { name: string; download_count: number }) =>
-            a.name.endsWith(".ddeb") ? s : s + a.download_count,
+        const total = releases.reduce(
+          (sum: number, rel: { assets?: { name: string; download_count: number }[] }) =>
+            sum +
+            (rel.assets ?? []).reduce(
+              (s: number, a: { name: string; download_count: number }) =>
+                a.name.endsWith(".ddeb") ? s : s + a.download_count,
+              0,
+            ),
           0,
         );
         setInfo({ assets, total });
