@@ -5,6 +5,7 @@
 #include <QStringList>
 
 class QLabel;
+class QPushButton;
 
 namespace ohmydj {
 
@@ -12,8 +13,9 @@ class RotationDock;
 class MultistreamDock;
 
 // Compact, dockable live panel: shows the rotation countdown and which
-// platforms are streaming at a glance, with a button that opens the settings
-// window. It owns no logic — it only reflects the two config docks' summaries.
+// platforms are streaming at a glance, plus a quick-action bar (skip, pause,
+// toggle rotation, stop streaming, settings). It owns no logic — it reflects
+// the two config docks' summaries and forwards button clicks to them.
 class OverviewDock : public QWidget {
 	Q_OBJECT
 
@@ -23,12 +25,17 @@ public:
 
 private slots:
 	void onRotationSummary(const QString &line);
+	void onRotationState(bool enabled, bool running, bool paused);
 	void onStreamSummary(bool streaming, bool sync, const QStringList &names,
 			     const QList<int> &statuses);
 
 private:
 	QLabel *rotation_;
 	QLabel *stream_;
+	QPushButton *skipBtn_;
+	QPushButton *pauseBtn_;
+	QPushButton *enableBtn_;
+	QPushButton *stopBtn_;
 	QWidget *settings_;
 };
 

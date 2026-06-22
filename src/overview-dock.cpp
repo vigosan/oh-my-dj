@@ -1,7 +1,9 @@
 #include "overview-dock.hpp"
 
+#include <obs-frontend-api.h>
 #include <obs-module.h>
 
+#include <QCursor>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -34,6 +36,16 @@ const char *DotColor(StreamStatus status)
 	}
 }
 
+QPushButton *ToolButton(const QString &glyph, const QString &tip, QWidget *parent)
+{
+	auto *button = new QPushButton(glyph, parent);
+	button->setFlat(true);
+	button->setToolTip(tip);
+	button->setFixedSize(30, 26);
+	button->setCursor(Qt::PointingHandCursor);
+	return button;
+}
+
 } // namespace
 
 OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream, QWidget *settings,
@@ -46,24 +58,40 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	stream_ = new QLabel(this);
 	stream_->setTextFormat(Qt::RichText);
 
-	auto *settingsBtn = new QPushButton(T("OhMyDj.Overview.Settings"), this);
+	skipBtn_ = ToolButton(QStringLiteral("⏭"), T("OhMyDj.Overview.Skip"), this);
+	pauseBtn_ = ToolButton(QStringLiteral("⏸"), T("OhMyDj.Overview.Pause"), this);
+	enableBtn_ = ToolButton(QStringLiteral("🔁"), T("OhMyDj.Overview.ToggleRotation"), this);
+	enableBtn_->setCheckable(true);
+	stopBtn_ = ToolButton(QStringLiteral("⏹"), T("OhMyDj.Overview.StopStream"), this);
+	auto *settingsBtn = ToolButton(QStringLiteral("⚙"), T("OhMyDj.Overview.Settings"), this);
 
-	auto *buttonRow = new QHBoxLayout();
-	buttonRow->addWidget(settingsBtn);
-	buttonRow->addStretch();
+	auto *toolbar = new QHBoxLayout();
+	toolbar->setSpacing(4);
+	toolbar->addWidget(skipBtn_);
+	toolbar->addWidget(pauseBtn_);
+	toolbar->addWidget(enableBtn_);
+	toolbar->addWidget(stopBtn_);
+	toolbar->addStretch();
+	toolbar->addWidget(settingsBtn);
 
 	auto *layout = new QVBoxLayout(this);
 	layout->setAlignment(Qt::AlignTop);
 	layout->addWidget(rotation_);
 	layout->addWidget(stream_);
-	layout->addLayout(buttonRow);
+	layout->addLayout(toolbar);
 
+	connect(skipBtn_, &QPushButton::clicked, rotation, &RotationDock::skip);
+	connect(pauseBtn_, &QPushButton::clicked, rotation, &RotationDock::togglePaused);
+	connect(enableBtn_, &QPushButton::clicked, rotation, &RotationDock::toggleEnabled);
+	connect(stopBtn_, &QPushButton::clicked, this, []() { obs_frontend_streaming_stop(); });
 	connect(settingsBtn, &QPushButton::clicked, this, [this]() {
 		settings_->show();
 		settings_->raise();
 		settings_->activateWindow();
 	});
+
 	connect(rotation, &RotationDock::summaryChanged, this, &OverviewDock::onRotationSummary);
+	connect(rotation, &RotationDock::rotationStateChanged, this, &OverviewDock::onRotationState);
 	connect(multistream, &MultistreamDock::summaryChanged, this, &OverviewDock::onStreamSummary);
 
 	rotation->pushSummary();
@@ -75,9 +103,22 @@ void OverviewDock::onRotationSummary(const QString &line)
 	rotation_->setText(QStringLiteral("🎬 %1").arg(line));
 }
 
+void OverviewDock::onRotationState(bool enabled, bool running, bool paused)
+{
+	skipBtn_->setEnabled(running);
+	pauseBtn_->setEnabled(running);
+	pauseBtn_->setText(paused ? QStringLiteral("▶") : QStringLiteral("⏸"));
+	pauseBtn_->setToolTip(paused ? T("OhMyDj.Overview.Resume") : T("OhMyDj.Overview.Pause"));
+	enableBtn_->blockSignals(true);
+	enableBtn_->setChecked(enabled);
+	enableBtn_->blockSignals(false);
+}
+
 void OverviewDock::onStreamSummary(bool streaming, bool sync, const QStringList &names,
 				   const QList<int> &statuses)
 {
+	stopBtn_->setEnabled(streaming);
+
 	const QString prefix = QStringLiteral("📡 ");
 	const auto dim = [](const QString &text) {
 		return QStringLiteral("<span style='color:#888888'>%1</span>").arg(text);

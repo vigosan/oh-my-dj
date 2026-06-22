@@ -29,8 +29,14 @@ public:
 	void persist();                // flush to disk (on OBS exit)
 	void pushSummary();            // re-broadcast the current status (for late subscribers)
 
+	// Live controls, driven from the overview's quick-action bar.
+	void skip();
+	void togglePaused();
+	void toggleEnabled();
+
 signals:
 	void summaryChanged(const QString &line);
+	void rotationStateChanged(bool enabled, bool running, bool paused);
 
 private:
 	void addRow(const RotationStep &step);

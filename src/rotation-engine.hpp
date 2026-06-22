@@ -29,6 +29,11 @@ public:
 	// The flow only runs while OBS is actually streaming.
 	void setStreaming(bool streaming);
 
+	// Live controls: jump to the next step now, or hold on the current one.
+	void skip();
+	void setPaused(bool paused);
+	bool paused() const { return paused_; }
+
 	// Called on every OBS scene change (and once when enabled) to re-evaluate.
 	void onSceneChanged();
 
@@ -42,6 +47,8 @@ public:
 	{
 		if (current_ < 0)
 			return -1;
+		if (paused_)
+			return (pausedRemainingMs_ + 999) / 1000;
 		const int ms = timer_.remainingTime();
 		return ms < 0 ? -1 : (ms + 999) / 1000;
 	}
@@ -64,6 +71,8 @@ private:
 	QTimer timer_;
 	bool enabled_ = false;
 	bool streaming_ = false;
+	bool paused_ = false;
+	int pausedRemainingMs_ = 0;
 	int current_ = -1;
 
 	// Distinguish scene changes we trigger ourselves from the DJ's.

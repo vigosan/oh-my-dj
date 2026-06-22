@@ -111,6 +111,7 @@ void RotationEngine::evaluate()
 
 void RotationEngine::arm(int index)
 {
+	paused_ = false;
 	current_ = index;
 	long long ms = steps_[index].seconds() * 1000;
 	if (ms < 1000)
@@ -122,6 +123,8 @@ void RotationEngine::arm(int index)
 void RotationEngine::park()
 {
 	timer_.stop();
+	paused_ = false;
+	pausedRemainingMs_ = 0;
 	if (current_ != -1) {
 		current_ = -1;
 		emit stepChanged(-1);
@@ -135,6 +138,7 @@ void RotationEngine::advance()
 		park();
 		return;
 	}
+	paused_ = false;
 	current_ = next;
 	pendingScene_ = steps_[next].scene;
 	expectingSelfSwitch_ = true;
@@ -149,9 +153,45 @@ void RotationEngine::advance()
 
 void RotationEngine::onTimeout()
 {
+	if (!active() || current_ < 0 || paused_)
+		return;
+	advance();
+}
+
+void RotationEngine::skip()
+{
 	if (!active() || current_ < 0)
 		return;
 	advance();
+}
+
+void RotationEngine::setPaused(bool paused)
+{
+	if (paused_ == paused)
+		return;
+
+	if (paused) {
+		if (!active() || current_ < 0)
+			return; // nothing running to hold
+		int ms = timer_.remainingTime();
+		if (ms < 0)
+			ms = static_cast<int>(steps_[current_].seconds() * 1000);
+		pausedRemainingMs_ = ms;
+		timer_.stop();
+		paused_ = true;
+	} else {
+		paused_ = false;
+		if (active() && current_ >= 0) {
+			int ms = pausedRemainingMs_ > 0
+					 ? pausedRemainingMs_
+					 : static_cast<int>(steps_[current_].seconds() * 1000);
+			if (ms < 1000)
+				ms = 1000;
+			timer_.start(ms);
+		}
+		pausedRemainingMs_ = 0;
+	}
+	emit stepChanged(current_);
 }
 
 RotationConfig LoadRotationConfig()

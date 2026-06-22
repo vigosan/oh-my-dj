@@ -108,6 +108,21 @@ void RotationDock::setObsStreaming(bool on)
 	onStepChanged(engine_.currentIndex());
 }
 
+void RotationDock::skip()
+{
+	engine_.skip();
+}
+
+void RotationDock::togglePaused()
+{
+	engine_.setPaused(!engine_.paused());
+}
+
+void RotationDock::toggleEnabled()
+{
+	enable_->setChecked(!enable_->isChecked());
+}
+
 QStringList RotationDock::sceneNames() const
 {
 	QStringList names;
@@ -282,8 +297,11 @@ void RotationDock::refreshStatus()
 			}
 		}
 	}
+	if (engine_.paused())
+		text += QStringLiteral(" ⏸");
 	status_->setText(text);
 	emit summaryChanged(text);
+	emit rotationStateChanged(enable_->isChecked(), engine_.currentIndex() >= 0, engine_.paused());
 }
 
 void RotationDock::pushSummary()
