@@ -26,6 +26,9 @@ public:
 	void setEnabled(bool enabled);
 	bool enabled() const { return enabled_; }
 
+	// The flow only runs while OBS is actually streaming.
+	void setStreaming(bool streaming);
+
 	// Called on every OBS scene change (and once when enabled) to re-evaluate.
 	void onSceneChanged();
 
@@ -37,7 +40,7 @@ public:
 	// Seconds left on the active step, or -1 when parked/idle.
 	int remainingSeconds() const
 	{
-		if (!enabled_ || current_ < 0)
+		if (current_ < 0)
 			return -1;
 		const int ms = timer_.remainingTime();
 		return ms < 0 ? -1 : (ms + 999) / 1000;
@@ -55,10 +58,12 @@ private:
 	void advance();
 	void arm(int index);
 	void park();
+	bool active() const { return enabled_ && streaming_; }
 
 	std::vector<RotationStep> steps_;
 	QTimer timer_;
 	bool enabled_ = false;
+	bool streaming_ = false;
 	int current_ = -1;
 
 	// Distinguish scene changes we trigger ourselves from the DJ's.

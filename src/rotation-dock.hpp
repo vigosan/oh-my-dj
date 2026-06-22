@@ -23,10 +23,11 @@ class RotationDock : public QWidget {
 public:
 	explicit RotationDock(QWidget *parent = nullptr);
 
-	void refreshScenes();   // repopulate scene pickers from OBS
-	void onSceneChanged();  // forwarded from the OBS frontend event
-	void persist();         // flush to disk (on OBS exit)
-	void pushSummary();     // re-broadcast the current status (for late subscribers)
+	void refreshScenes();          // repopulate scene pickers from OBS
+	void onSceneChanged();         // forwarded from the OBS frontend event
+	void setObsStreaming(bool on); // the flow only runs while OBS streams
+	void persist();                // flush to disk (on OBS exit)
+	void pushSummary();            // re-broadcast the current status (for late subscribers)
 
 signals:
 	void summaryChanged(const QString &line);
@@ -51,6 +52,7 @@ private:
 	QCheckBox *enable_;
 	QLabel *status_;
 	QTimer *tick_;
+	bool obsStreaming_ = false;
 	bool updating_ = false;
 };
 

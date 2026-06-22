@@ -39,14 +39,19 @@ void OnFrontendEvent(enum obs_frontend_event event, void *)
 	case OBS_FRONTEND_EVENT_FINISHED_LOADING:
 		if (g_rotation) {
 			g_rotation->refreshScenes();
+			g_rotation->setObsStreaming(obs_frontend_streaming_active());
 			g_rotation->onSceneChanged();
 		}
 		break;
 	case OBS_FRONTEND_EVENT_STREAMING_STARTED:
+		if (g_rotation)
+			g_rotation->setObsStreaming(true);
 		if (g_multistream)
 			g_multistream->onObsStreamingStarted();
 		break;
 	case OBS_FRONTEND_EVENT_STREAMING_STOPPING:
+		if (g_rotation)
+			g_rotation->setObsStreaming(false);
 		if (g_multistream)
 			g_multistream->onObsStreamingStopping();
 		break;

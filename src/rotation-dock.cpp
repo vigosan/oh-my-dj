@@ -95,7 +95,16 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	updating_ = false;
 
 	engine_.setSteps(collectSteps());
+	obsStreaming_ = obs_frontend_streaming_active();
+	engine_.setStreaming(obsStreaming_);
 	engine_.setEnabled(config.enabled);
+	onStepChanged(engine_.currentIndex());
+}
+
+void RotationDock::setObsStreaming(bool on)
+{
+	obsStreaming_ = on;
+	engine_.setStreaming(on);
 	onStepChanged(engine_.currentIndex());
 }
 
@@ -258,7 +267,8 @@ void RotationDock::refreshStatus()
 	} else {
 		const int index = engine_.currentIndex();
 		if (index < 0 || index >= table_->rowCount()) {
-			text = T("OhMyDj.Rotation.Waiting");
+			text = obsStreaming_ ? T("OhMyDj.Rotation.Waiting")
+					     : T("OhMyDj.Rotation.WaitingObs");
 		} else {
 			const QString scene = Combo(table_, index, ColScene)->currentText();
 			const int secs = engine_.remainingSeconds();

@@ -60,7 +60,7 @@ RotationEngine::RotationEngine(QObject *parent) : QObject(parent)
 void RotationEngine::setSteps(std::vector<RotationStep> steps)
 {
 	steps_ = std::move(steps);
-	if (enabled_)
+	if (active())
 		evaluate();
 }
 
@@ -69,7 +69,18 @@ void RotationEngine::setEnabled(bool enabled)
 	if (enabled_ == enabled)
 		return;
 	enabled_ = enabled;
-	if (enabled_)
+	if (active())
+		evaluate();
+	else
+		park();
+}
+
+void RotationEngine::setStreaming(bool streaming)
+{
+	if (streaming_ == streaming)
+		return;
+	streaming_ = streaming;
+	if (active())
 		evaluate();
 	else
 		park();
@@ -77,7 +88,7 @@ void RotationEngine::setEnabled(bool enabled)
 
 void RotationEngine::onSceneChanged()
 {
-	if (enabled_)
+	if (active())
 		evaluate();
 }
 
@@ -138,7 +149,7 @@ void RotationEngine::advance()
 
 void RotationEngine::onTimeout()
 {
-	if (!enabled_ || current_ < 0)
+	if (!active() || current_ < 0)
 		return;
 	advance();
 }
