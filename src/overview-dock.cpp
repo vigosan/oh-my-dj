@@ -43,7 +43,7 @@ QPushButton *ToolButton(const QString &iconPath, const QString &tip, QWidget *pa
 {
 	auto *button = new QPushButton(parent);
 	button->setIcon(QIcon(iconPath));
-	button->setIconSize(QSize(20, 20));
+	button->setIconSize(QSize(16, 16));
 	button->setFlat(true);
 	button->setToolTip(tip);
 	button->setFixedSize(32, 28);
