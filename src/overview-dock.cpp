@@ -8,8 +8,8 @@
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
-#include <QPushButton>
 #include <QSize>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include "multistream-dock.hpp"
@@ -39,14 +39,14 @@ const char *DotColor(StreamStatus status)
 	}
 }
 
-QPushButton *ToolButton(const QString &iconPath, const QString &tip, QWidget *parent)
+QToolButton *ToolButton(const QString &iconPath, const QString &tip, QWidget *parent)
 {
-	auto *button = new QPushButton(parent);
+	auto *button = new QToolButton(parent);
 	button->setIcon(QIcon(iconPath));
 	button->setIconSize(QSize(14, 14));
-	button->setFlat(true);
+	button->setAutoRaise(true);
 	button->setToolTip(tip);
-	button->setFixedSize(25, 25);
+	button->setFixedSize(30, 24);
 	button->setCursor(Qt::PointingHandCursor);
 	return button;
 }
@@ -109,11 +109,11 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	layout->addWidget(separator);
 	layout->addLayout(toolbar);
 
-	connect(skipBtn_, &QPushButton::clicked, rotation, &RotationDock::skip);
-	connect(pauseBtn_, &QPushButton::clicked, rotation, &RotationDock::togglePaused);
-	connect(enableBtn_, &QPushButton::clicked, rotation, &RotationDock::toggleEnabled);
-	connect(stopBtn_, &QPushButton::clicked, this, []() { obs_frontend_streaming_stop(); });
-	connect(settingsBtn, &QPushButton::clicked, this, [this]() {
+	connect(skipBtn_, &QToolButton::clicked, rotation, &RotationDock::skip);
+	connect(pauseBtn_, &QToolButton::clicked, rotation, &RotationDock::togglePaused);
+	connect(enableBtn_, &QToolButton::clicked, rotation, &RotationDock::toggleEnabled);
+	connect(stopBtn_, &QToolButton::clicked, this, []() { obs_frontend_streaming_stop(); });
+	connect(settingsBtn, &QToolButton::clicked, this, [this]() {
 		settings_->show();
 		settings_->raise();
 		settings_->activateWindow();

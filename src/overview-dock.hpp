@@ -5,7 +5,7 @@
 #include <QStringList>
 
 class QLabel;
-class QPushButton;
+class QToolButton;
 
 namespace ohmydj {
 
@@ -32,10 +32,10 @@ private slots:
 private:
 	QLabel *rotation_;
 	QLabel *stream_;
-	QPushButton *skipBtn_;
-	QPushButton *pauseBtn_;
-	QPushButton *enableBtn_;
-	QPushButton *stopBtn_;
+	QToolButton *skipBtn_;
+	QToolButton *pauseBtn_;
+	QToolButton *enableBtn_;
+	QToolButton *stopBtn_;
 	QWidget *settings_;
 };
 
