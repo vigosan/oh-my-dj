@@ -62,6 +62,7 @@ target_sources(
     src/multistream-dock.cpp
     src/overview-dock.hpp
     src/overview-dock.cpp
+    src/oh-my-dj.qrc
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

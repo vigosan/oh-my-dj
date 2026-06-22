@@ -6,8 +6,10 @@
 #include <QCursor>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QPushButton>
+#include <QSize>
 #include <QVBoxLayout>
 
 #include "multistream-dock.hpp"
@@ -37,9 +39,11 @@ const char *DotColor(StreamStatus status)
 	}
 }
 
-QPushButton *ToolButton(const QString &glyph, const QString &tip, QWidget *parent)
+QPushButton *ToolButton(const QString &iconPath, const QString &tip, QWidget *parent)
 {
-	auto *button = new QPushButton(glyph, parent);
+	auto *button = new QPushButton(parent);
+	button->setIcon(QIcon(iconPath));
+	button->setIconSize(QSize(16, 16));
 	button->setFlat(true);
 	button->setToolTip(tip);
 	button->setFixedSize(30, 26);
@@ -59,12 +63,15 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	stream_ = new QLabel(this);
 	stream_->setTextFormat(Qt::RichText);
 
-	skipBtn_ = ToolButton(QStringLiteral("⏭"), T("OhMyDj.Overview.Skip"), this);
-	pauseBtn_ = ToolButton(QStringLiteral("⏸"), T("OhMyDj.Overview.Pause"), this);
-	enableBtn_ = ToolButton(QStringLiteral("🔁"), T("OhMyDj.Overview.ToggleRotation"), this);
+	skipBtn_ = ToolButton(QStringLiteral(":/oh-my-dj/icons/skip.svg"), T("OhMyDj.Overview.Skip"), this);
+	pauseBtn_ = ToolButton(QStringLiteral(":/oh-my-dj/icons/pause.svg"), T("OhMyDj.Overview.Pause"), this);
+	enableBtn_ = ToolButton(QStringLiteral(":/oh-my-dj/icons/rotate.svg"),
+				T("OhMyDj.Overview.ToggleRotation"), this);
 	enableBtn_->setCheckable(true);
-	stopBtn_ = ToolButton(QStringLiteral("⏹"), T("OhMyDj.Overview.StopStream"), this);
-	auto *settingsBtn = ToolButton(QStringLiteral("⚙"), T("OhMyDj.Overview.Settings"), this);
+	stopBtn_ = ToolButton(QStringLiteral(":/oh-my-dj/icons/stop.svg"), T("OhMyDj.Overview.StopStream"),
+			      this);
+	auto *settingsBtn =
+		ToolButton(QStringLiteral(":/oh-my-dj/icons/gear.svg"), T("OhMyDj.Overview.Settings"), this);
 
 	auto *divider = new QFrame(this);
 	divider->setFrameShape(QFrame::VLine);
@@ -113,7 +120,8 @@ void OverviewDock::onRotationState(bool enabled, bool running, bool paused)
 {
 	skipBtn_->setEnabled(running);
 	pauseBtn_->setEnabled(running);
-	pauseBtn_->setText(paused ? QStringLiteral("▶") : QStringLiteral("⏸"));
+	pauseBtn_->setIcon(QIcon(paused ? QStringLiteral(":/oh-my-dj/icons/play.svg")
+					: QStringLiteral(":/oh-my-dj/icons/pause.svg")));
 	pauseBtn_->setToolTip(paused ? T("OhMyDj.Overview.Resume") : T("OhMyDj.Overview.Pause"));
 	enableBtn_->blockSignals(true);
 	enableBtn_->setChecked(enabled);
