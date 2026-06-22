@@ -23,8 +23,9 @@ class RotationDock : public QWidget {
 public:
 	explicit RotationDock(QWidget *parent = nullptr);
 
-	void refreshScenes();          // repopulate scene pickers from OBS
-	void onSceneChanged();         // forwarded from the OBS frontend event
+	void refreshScenes();                                     // repopulate scene pickers from OBS
+	void renameScene(const QString &from, const QString &to); // follow an OBS scene rename
+	void onSceneChanged();                                    // forwarded from the OBS frontend event
 	void setObsStreaming(bool on); // the flow only runs while OBS streams
 	void persist();                // flush to disk (on OBS exit)
 	void pushSummary();            // re-broadcast the current status (for late subscribers)

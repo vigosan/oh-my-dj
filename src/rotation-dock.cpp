@@ -327,6 +327,29 @@ void RotationDock::refreshScenes()
 	updating_ = false;
 }
 
+void RotationDock::renameScene(const QString &from, const QString &to)
+{
+	if (from.isEmpty() || from == to)
+		return;
+
+	// The rename already landed in OBS, so sceneNames() now returns the new
+	// name. Refill every picker (so the dropdowns pick it up) and carry any
+	// selection that pointed at the old name over to the new one.
+	updating_ = true;
+	for (int row = 0; row < table_->rowCount(); ++row) {
+		QComboBox *scene = Combo(table_, row, ColScene);
+		const QString current = scene->currentText();
+		fillSceneCombo(scene, current == from ? to : current);
+
+		QComboBox *onExpire = Combo(table_, row, ColOnExpire);
+		const QString target = onExpire->currentIndex() == 0 ? QString() : onExpire->currentText();
+		fillOnExpireCombo(onExpire, target == from ? to : target);
+	}
+	updating_ = false;
+
+	onEdited(); // push the renamed steps to the engine and persist
+}
+
 void RotationDock::persist()
 {
 	SaveRotationConfig({collectSteps(), enable_->isChecked()});

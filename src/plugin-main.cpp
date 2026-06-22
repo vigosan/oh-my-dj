@@ -3,7 +3,9 @@
 
 #include <QDialog>
 #include <QMainWindow>
+#include <QMetaObject>
 #include <QPointer>
+#include <QString>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
@@ -71,6 +73,29 @@ void OnFrontendEvent(enum obs_frontend_event event, void *)
 	}
 }
 
+void OnSourceRename(void *, calldata_t *cd)
+{
+	auto *source = static_cast<obs_source_t *>(calldata_ptr(cd, "source"));
+	if (!source || obs_source_get_type(source) != OBS_SOURCE_TYPE_SCENE)
+		return;
+
+	const QString from = QString::fromUtf8(calldata_string(cd, "prev_name"));
+	const QString to = QString::fromUtf8(calldata_string(cd, "new_name"));
+
+	// libobs raises this on a non-GUI thread; hop to the dock's thread before
+	// touching any widgets.
+	ohmydj::RotationDock *dock = g_rotation;
+	if (!dock)
+		return;
+	QMetaObject::invokeMethod(
+		dock,
+		[from, to]() {
+			if (g_rotation)
+				g_rotation->renameScene(from, to);
+		},
+		Qt::QueuedConnection);
+}
+
 } // namespace
 
 bool obs_module_load(void)
@@ -108,6 +133,7 @@ bool obs_module_load(void)
 	}
 
 	obs_frontend_add_event_callback(OnFrontendEvent, nullptr);
+	signal_handler_connect(obs_get_signal_handler(), "source_rename", OnSourceRename, nullptr);
 	blog(LOG_INFO, "[oh-my-dj] loaded version %s", PLUGIN_VERSION);
 	return true;
 }
@@ -115,6 +141,7 @@ bool obs_module_load(void)
 void obs_module_unload(void)
 {
 	obs_frontend_remove_event_callback(OnFrontendEvent, nullptr);
+	signal_handler_disconnect(obs_get_signal_handler(), "source_rename", OnSourceRename, nullptr);
 	// Only delete it if Qt hasn't already (OBS usually destroys the main window,
 	// and with it this dialog and both docks, before unloading the module).
 	if (g_settings)
