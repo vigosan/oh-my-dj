@@ -1,14 +1,21 @@
 #include "update-check.hpp"
 
+#include <QByteArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QNetworkRequest>
-#include <QUrl>
 #include <QVector>
 
+#include <string>
+#include <thread>
+
 namespace ohmydj {
+
+namespace detail {
+// Defined per platform (see update-check-mac.mm and the non-Apple fallback
+// below). Returns the response body, or an empty string on any failure.
+// Blocking — must run off the GUI thread.
+std::string HttpGet(const std::string &url);
+} // namespace detail
 
 namespace {
 
@@ -42,37 +49,43 @@ bool IsNewer(const QString &current, const QString &candidate)
 void CheckForUpdate(QObject *context, const QString &currentVersion,
 		    std::function<void(const QString &, const QString &)> onNewer)
 {
-	auto *manager = new QNetworkAccessManager(context);
+	auto *notifier = new UpdateNotifier();
+	QObject::connect(notifier, &UpdateNotifier::newerAvailable, context,
+			 [onNewer](const QString &version, const QString &url) { onNewer(version, url); });
+	QObject::connect(notifier, &UpdateNotifier::newerAvailable, notifier, &QObject::deleteLater);
 
-	QNetworkRequest request{QUrl(QString::fromUtf8(kLatestReleaseApi))};
-	request.setRawHeader("Accept", "application/vnd.github+json");
-	request.setRawHeader("User-Agent", "oh-my-dj"); // GitHub rejects requests without one.
-	request.setTransferTimeout(8000);               // Never hold resources if the network stalls.
+	std::thread([notifier, currentVersion]() {
+		const std::string body = detail::HttpGet(kLatestReleaseApi);
+		if (body.empty()) {
+			notifier->deleteLater();
+			return;
+		}
 
-	QNetworkReply *reply = manager->get(request);
-	QObject::connect(reply, &QNetworkReply::finished, context,
-			 [reply, manager, currentVersion, onNewer]() {
-				 reply->deleteLater();
-				 manager->deleteLater();
+		const QJsonObject release = QJsonDocument::fromJson(QByteArray::fromStdString(body)).object();
+		QString tag = release.value("tag_name").toString();
+		if (tag.startsWith('v'))
+			tag = tag.mid(1);
+		if (tag.isEmpty() || !IsNewer(currentVersion, tag)) {
+			notifier->deleteLater();
+			return;
+		}
 
-				 // No network, timeout, rate limit, bad payload… stay silent.
-				 if (reply->error() != QNetworkReply::NoError)
-					 return;
-
-				 const QJsonObject release =
-					 QJsonDocument::fromJson(reply->readAll()).object();
-
-				 QString tag = release.value("tag_name").toString();
-				 if (tag.startsWith('v'))
-					 tag = tag.mid(1);
-				 if (tag.isEmpty() || !IsNewer(currentVersion, tag))
-					 return;
-
-				 QString url = release.value("html_url").toString();
-				 if (url.isEmpty())
-					 url = QString::fromUtf8(kReleasesPage);
-				 onNewer(tag, url);
-			 });
+		QString url = release.value("html_url").toString();
+		if (url.isEmpty())
+			url = QString::fromUtf8(kReleasesPage);
+		notifier->report(tag, url);
+	}).detach();
 }
+
+#if !defined(__APPLE__)
+namespace detail {
+// TODO: Windows/Linux transport (e.g. libcurl). Until then the update check is
+// a no-op off macOS — the dock simply never shows the notice there.
+std::string HttpGet(const std::string &)
+{
+	return {};
+}
+} // namespace detail
+#endif
 
 } // namespace ohmydj

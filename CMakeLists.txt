@@ -27,8 +27,8 @@ if(ENABLE_FRONTEND_API)
 endif()
 
 if(ENABLE_QT)
-  find_package(Qt6 COMPONENTS Widgets Core Network)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network)
+  find_package(Qt6 COMPONENTS Widgets Core)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
   target_compile_options(
     ${CMAKE_PROJECT_NAME}
     PRIVATE $<$<C_COMPILER_ID:Clang,AppleClang>:-Wno-quoted-include-in-framework-header -Wno-comma>
@@ -66,5 +66,13 @@ target_sources(
     src/update-check.cpp
     src/oh-my-dj.qrc
 )
+
+# macOS does the update check over the system's native networking (NSURLSession),
+# because OBS ships no Qt TLS backend and Qt HTTPS requests fail without one.
+if(APPLE)
+  enable_language(OBJCXX)
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/update-check-mac.mm)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "-framework Foundation")
+endif()
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
