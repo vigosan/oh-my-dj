@@ -15,6 +15,11 @@
 #include "multistream-dock.hpp"
 #include "rotation-dock.hpp"
 #include "stream-target.hpp"
+#include "update-check.hpp"
+
+#ifndef PLUGIN_VERSION
+#define PLUGIN_VERSION "0.0.0"
+#endif
 
 namespace ohmydj {
 
@@ -59,6 +64,11 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 {
 	setObjectName("oh-my-dj-overview");
 
+	update_ = new QLabel(this);
+	update_->setTextFormat(Qt::RichText);
+	update_->setOpenExternalLinks(true);
+	update_->setVisible(false);
+
 	rotation_ = new QLabel(this);
 	stream_ = new QLabel(this);
 	stream_->setTextFormat(Qt::RichText);
@@ -86,6 +96,7 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	auto *info = new QVBoxLayout();
 	info->setContentsMargins(8, 8, 8, 8);
 	info->setSpacing(4);
+	info->addWidget(update_);
 	info->addWidget(rotation_);
 	info->addWidget(stream_);
 
@@ -125,6 +136,16 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 
 	rotation->pushSummary();
 	multistream->pushSummary();
+
+	CheckForUpdate(this, QStringLiteral(PLUGIN_VERSION),
+		       [this](const QString &version, const QString &url) { showUpdate(version, url); });
+}
+
+void OverviewDock::showUpdate(const QString &version, const QString &url)
+{
+	update_->setText(QStringLiteral("⬆️ <a style='color:#e0a23b' href=\"%1\">%2</a>")
+				 .arg(url.toHtmlEscaped(), T("OhMyDj.Update.Available").arg(version)));
+	update_->setVisible(true);
 }
 
 void OverviewDock::onRotationSummary(const QString &line)

@@ -30,6 +30,9 @@ private slots:
 			     const QList<int> &statuses);
 
 private:
+	void showUpdate(const QString &version, const QString &url);
+
+	QLabel *update_;
 	QLabel *rotation_;
 	QLabel *stream_;
 	QToolButton *skipBtn_;
