@@ -14,7 +14,6 @@ const STEPS = [
   { name: "CAM 2", secs: 30 },
   { name: "CAM 3", secs: 60 },
 ];
-const STEP_MS = 4200;
 
 export default function Page() {
   const [lang, setLang] = useState<Lang>("en");
@@ -132,17 +131,20 @@ function DockMock({ t }: { t: T }) {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduce.matches) {
-      setP(0.62);
+      setP(0.45);
       return;
     }
     let raf = 0;
     let start: number | null = null;
+    let idx = 0;
+    const durationMs = (secs: number) => 1800 + secs * 22;
     const tick = (ts: number) => {
       if (start === null) start = ts;
-      const prog = (ts - start) / STEP_MS;
+      const prog = (ts - start) / durationMs(STEPS[idx].secs);
       if (prog >= 1) {
         start = ts;
-        setI((x) => (x + 1) % STEPS.length);
+        idx = (idx + 1) % STEPS.length;
+        setI(idx);
         setP(0);
       } else {
         setP(prog);
@@ -185,17 +187,29 @@ function DockMock({ t }: { t: T }) {
         <div className="h-1.5 w-full overflow-hidden bg-fog">
           <div className="h-full bg-ink" style={{ width: `${p * 100}%` }} />
         </div>
-        <div className="flex gap-1.5 pt-1 font-mono text-[11px]">
-          {STEPS.map((s, idx) => (
-            <span
-              key={s.name}
-              className={`px-2 py-1 transition-colors ${
-                idx === i ? "bg-ink text-paper" : "bg-fog text-mute"
-              }`}
-            >
-              {s.name}
-            </span>
-          ))}
+        <div className="grid grid-cols-3 gap-1.5">
+          {STEPS.map((s, idx) => {
+            const active = idx === i;
+            return (
+              <div
+                key={s.name}
+                className={`relative flex aspect-video flex-col items-center justify-center gap-1 font-mono transition-colors duration-300 ${
+                  active ? "bg-ink text-paper" : "bg-fog text-mute"
+                }`}
+              >
+                <Corners active={active} />
+                <span className="inline-flex items-center gap-1 text-xs font-bold tracking-tight">
+                  {active && (
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
+                  )}
+                  {s.name}
+                </span>
+                <span className="text-[10px] tabular-nums opacity-70">
+                  {fmtDuration(s.secs)}
+                </span>
+              </div>
+            );
+          })}
         </div>
         <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-mute">
           <span className="h-1.5 w-1.5 rounded-full bg-ink" />
@@ -203,6 +217,22 @@ function DockMock({ t }: { t: T }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function fmtDuration(secs: number) {
+  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+}
+
+function Corners({ active }: { active: boolean }) {
+  const c = active ? "border-paper/40" : "border-ink/15";
+  return (
+    <>
+      <span className={`pointer-events-none absolute left-1 top-1 h-1.5 w-1.5 border-l border-t ${c}`} />
+      <span className={`pointer-events-none absolute right-1 top-1 h-1.5 w-1.5 border-r border-t ${c}`} />
+      <span className={`pointer-events-none absolute bottom-1 left-1 h-1.5 w-1.5 border-b border-l ${c}`} />
+      <span className={`pointer-events-none absolute bottom-1 right-1 h-1.5 w-1.5 border-b border-r ${c}`} />
+    </>
   );
 }
 
