@@ -30,6 +30,12 @@ body {
   color: var(--color-paper);
 }
 
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href] {
+  cursor: pointer;
+}
+
 .grid-bg {
   background-image:
     linear-gradient(to right, var(--color-line) 1px, transparent 1px),
