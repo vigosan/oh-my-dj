@@ -28,9 +28,11 @@ public:
 	void pushSummary();  // re-broadcast platforms + status (for late subscribers)
 
 signals:
-	// One entry per configured platform, parallel lists: display name and its
-	// current StreamStatus (as int).
-	void summaryChanged(const QStringList &names, const QList<int> &statuses);
+	// `streaming` is whether OBS itself is live and `sync` whether the sync
+	// switch is on; `names`/`statuses` are parallel per-platform lists (the
+	// status is a StreamStatus as int).
+	void summaryChanged(bool streaming, bool sync, const QStringList &names,
+			    const QList<int> &statuses);
 
 private:
 	void addRow(const StreamTarget &target);
@@ -49,6 +51,7 @@ private:
 	QTableWidget *table_;
 	QCheckBox *sync_;
 	std::vector<int> statuses_;
+	bool obsStreaming_ = false;
 	bool updating_ = false;
 };
 

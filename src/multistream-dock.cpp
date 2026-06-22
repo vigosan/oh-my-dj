@@ -1,5 +1,6 @@
 #include "multistream-dock.hpp"
 
+#include <obs-frontend-api.h>
 #include <obs-module.h>
 
 #include <QCheckBox>
@@ -125,6 +126,8 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 	connect(&engine_, &MultistreamEngine::targetStatusChanged, this,
 		&MultistreamDock::onTargetStatusChanged);
 
+	obsStreaming_ = obs_frontend_streaming_active();
+
 	updating_ = true;
 	StreamConfig config = LoadStreamConfig();
 	sync_->setChecked(config.syncWithObs);
@@ -247,7 +250,7 @@ void MultistreamDock::emitSummary()
 				     ? statuses_[i]
 				     : static_cast<int>(StreamStatus::Idle));
 	}
-	emit summaryChanged(names, statuses);
+	emit summaryChanged(obsStreaming_, sync_->isChecked(), names, statuses);
 }
 
 void MultistreamDock::pushSummary()
@@ -261,19 +264,24 @@ void MultistreamDock::onSyncToggled(bool enabled)
 		SaveStreamConfig(collectConfig());
 	if (!enabled && engine_.running())
 		engine_.stop();
+	emitSummary();
 }
 
 void MultistreamDock::onObsStreamingStarted()
 {
-	if (!sync_->isChecked())
-		return;
-	engine_.setTargets(collectTargets());
-	engine_.start(/*useMainEncoders=*/true);
+	obsStreaming_ = true;
+	if (sync_->isChecked()) {
+		engine_.setTargets(collectTargets());
+		engine_.start(/*useMainEncoders=*/true);
+	}
+	emitSummary();
 }
 
 void MultistreamDock::onObsStreamingStopping()
 {
+	obsStreaming_ = false;
 	engine_.stop();
+	emitSummary();
 }
 
 void MultistreamDock::onRunningChanged(bool running)

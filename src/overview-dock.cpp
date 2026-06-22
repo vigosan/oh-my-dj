@@ -75,17 +75,32 @@ void OverviewDock::onRotationSummary(const QString &line)
 	rotation_->setText(QStringLiteral("🎬 %1").arg(line));
 }
 
-void OverviewDock::onStreamSummary(const QStringList &names, const QList<int> &statuses)
+void OverviewDock::onStreamSummary(bool streaming, bool sync, const QStringList &names,
+				   const QList<int> &statuses)
 {
-	QString html = QStringLiteral("📡 ");
+	const QString prefix = QStringLiteral("📡 ");
+	const auto dim = [](const QString &text) {
+		return QStringLiteral("<span style='color:#888888'>%1</span>").arg(text);
+	};
+
 	if (names.isEmpty()) {
-		html += QStringLiteral("<span style='color:#888888'>—</span>");
-	} else {
-		for (int i = 0; i < names.size(); ++i) {
-			const auto status = static_cast<StreamStatus>(statuses.value(i));
-			html += QStringLiteral("<span style='color:%1'>●</span> %2&nbsp;&nbsp;")
-					.arg(QString::fromUtf8(DotColor(status)), names.at(i).toHtmlEscaped());
-		}
+		stream_->setText(prefix + dim(QStringLiteral("—")));
+		return;
+	}
+	if (!sync) {
+		stream_->setText(prefix + dim(T("OhMyDj.Overview.SyncOff")));
+		return;
+	}
+	if (!streaming) {
+		stream_->setText(prefix + dim(T("OhMyDj.Overview.WaitingObs")));
+		return;
+	}
+
+	QString html = prefix;
+	for (int i = 0; i < names.size(); ++i) {
+		const auto status = static_cast<StreamStatus>(statuses.value(i));
+		html += QStringLiteral("<span style='color:%1'>●</span> %2&nbsp;&nbsp;")
+				.arg(QString::fromUtf8(DotColor(status)), names.at(i).toHtmlEscaped());
 	}
 	stream_->setText(html);
 }

@@ -23,7 +23,8 @@ public:
 
 private slots:
 	void onRotationSummary(const QString &line);
-	void onStreamSummary(const QStringList &names, const QList<int> &statuses);
+	void onStreamSummary(bool streaming, bool sync, const QStringList &names,
+			     const QList<int> &statuses);
 
 private:
 	QLabel *rotation_;
