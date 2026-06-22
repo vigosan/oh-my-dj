@@ -28,14 +28,13 @@ Work directly on `main`: the version bump is committed and tagged on main.
 
 - Create an annotated tag: `git tag -a X.Y.Z -m "Oh My DJ X.Y.Z"`.
 - Push both: `git push origin main && git push origin X.Y.Z`.
-- The tag (matching `X.Y.Z`) triggers `.github/workflows/build-project.yaml` with `notarize:true`: it signs every artifact, notarizes + staples the macOS `.pkg`, and publishes a **draft** GitHub Release with the macOS `.pkg`, Windows `.zip` and Linux `.deb` (+ dbgsym).
+- The tag (matching `X.Y.Z`) triggers `.github/workflows/build-project.yaml` with `notarize:true`: it signs every artifact, notarizes + staples the macOS `.pkg`, and publishes the GitHub Release (not a draft) with the macOS `.pkg`, Windows `.zip` and Linux `.deb` (+ dbgsym).
 
-## 5. Release notes and publish
+## 5. Release notes
 
 - Confirm CI started: `gh run list --workflow=push.yaml --limit 1`. The macOS job is the one that signs + notarizes; it takes several minutes. Poll briefly if asked — don't block indefinitely on `gh run watch`.
 - Curate notes from `git log <prev-tag>..HEAD --oneline --no-merges` (use `git describe --tags --abbrev=0 HEAD^` for the previous tag; if there is none, it's the first release). Keep ONLY user-facing items — new features and meaningful changes; drop refactors, tests, CI/release plumbing and dependency bumps. Collapse related commits. Write for a DJ, not for a developer.
-- Set them on the draft: `gh release edit X.Y.Z --notes "..."`.
-- Leave it as a draft for review, unless asked to publish — then `gh release edit X.Y.Z --draft=false`.
+- The release is published automatically by CI (not a draft). Set the notes on it: `gh release edit X.Y.Z --notes "..."`.
 
 ## 6. Report
 
