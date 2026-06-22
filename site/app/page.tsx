@@ -87,37 +87,39 @@ function Hero({ t }: { t: T }) {
   return (
     <section id="top" className="relative overflow-hidden border-b border-line">
       <div className="grid-bg pointer-events-none absolute inset-0 h-full" aria-hidden />
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 md:py-28 lg:gap-16 lg:grid-cols-[1.1fr_0.9fr]">
-        <div>
-          <span className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
-            <span className="h-1.5 w-1.5 rounded-full bg-ink" />
-            {t.hero.badge}
-          </span>
-          <h1 className="mt-8 text-5xl font-bold leading-[1.02] tracking-tight md:text-6xl">
-            {t.hero.title}
-            <span className="mt-3 block text-3xl font-semibold leading-[1.1] text-ink/70 md:text-4xl">
-              {t.hero.titleAccent}
-            </span>
-          </h1>
-          <p className="mt-8 max-w-xl text-lg leading-relaxed text-mute">{t.hero.subtitle}</p>
-          <div className="mt-10 flex flex-wrap items-center gap-3">
-            <a
-              href="#download"
-              className="inline-flex h-12 items-center border border-ink bg-ink px-6 text-sm font-medium text-paper transition-opacity hover:opacity-80"
-            >
-              {t.hero.download}
-            </a>
-            <a
-              href={REPO_URL}
-              className="inline-flex h-12 items-center border border-ink px-6 text-sm font-medium transition-colors hover:bg-fog"
-            >
-              {t.hero.source}
-            </a>
+      <div className="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
+        <span className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
+          <span className="h-1.5 w-1.5 rounded-full bg-ink" />
+          {t.hero.badge}
+        </span>
+        <h1 className="mt-8 text-4xl font-bold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl">
+          {t.hero.title}
+        </h1>
+        <p className="mt-3 text-2xl font-semibold leading-[1.1] text-ink/70 sm:text-3xl md:text-4xl">
+          {t.hero.titleAccent}
+        </p>
+        <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
+          <div>
+            <p className="max-w-xl text-lg leading-relaxed text-mute">{t.hero.subtitle}</p>
+            <div className="mt-10 flex flex-wrap items-center gap-3">
+              <a
+                href="#download"
+                className="inline-flex h-12 items-center border border-ink bg-ink px-6 text-sm font-medium text-paper transition-opacity hover:opacity-80"
+              >
+                {t.hero.download}
+              </a>
+              <a
+                href={REPO_URL}
+                className="inline-flex h-12 items-center border border-ink px-6 text-sm font-medium transition-colors hover:bg-fog"
+              >
+                {t.hero.source}
+              </a>
+            </div>
+            <p className="mt-8 max-w-xl font-mono text-xs leading-relaxed text-mute">{t.hero.replaces}</p>
           </div>
-          <p className="mt-8 max-w-xl font-mono text-xs leading-relaxed text-mute">{t.hero.replaces}</p>
-        </div>
-        <div className="flex justify-center lg:justify-end">
-          <DockMock t={t} />
+          <div className="flex justify-center lg:justify-end">
+            <DockMock t={t} />
+          </div>
         </div>
       </div>
     </section>
@@ -127,6 +129,7 @@ function Hero({ t }: { t: T }) {
 function DockMock({ t }: { t: T }) {
   const [i, setI] = useState(0);
   const [p, setP] = useState(0);
+  const [tab, setTab] = useState<"cameras" | "streaming">("cameras");
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -172,56 +175,139 @@ function DockMock({ t }: { t: T }) {
         </span>
       </div>
       <div className="flex border-b border-line font-mono text-xs">
-        <span className="border-r border-line bg-ink px-4 py-2 text-paper">{t.dock.cameras}</span>
-        <span className="px-4 py-2 text-mute">{t.dock.streaming}</span>
+        <button
+          onClick={() => setTab("cameras")}
+          className={`border-r border-line px-4 py-2 transition-colors ${
+            tab === "cameras" ? "bg-ink text-paper" : "text-mute hover:text-ink"
+          }`}
+        >
+          {t.dock.cameras}
+        </button>
+        <button
+          onClick={() => setTab("streaming")}
+          className={`border-r border-line px-4 py-2 transition-colors ${
+            tab === "streaming" ? "bg-ink text-paper" : "text-mute hover:text-ink"
+          }`}
+        >
+          {t.dock.streaming}
+        </button>
       </div>
-      <div className="space-y-3 p-4">
-        <div className="flex items-baseline justify-between font-mono text-xs text-mute">
-          <span>
-            {t.dock.showing}: <span className="font-bold text-ink">{cur.name}</span>
-          </span>
-          <span className="tabular-nums">
-            {clock} → {next.name}
-          </span>
+      {tab === "cameras" ? (
+        <div className="space-y-3 p-4">
+          <div className="flex items-baseline justify-between font-mono text-xs text-mute">
+            <span>
+              {t.dock.showing}: <span className="font-bold text-ink">{cur.name}</span>
+            </span>
+            <span className="tabular-nums">
+              {clock} → {next.name}
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden bg-fog">
+            <div className="h-full bg-ink" style={{ width: `${p * 100}%` }} />
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {STEPS.map((s, idx) => {
+              const active = idx === i;
+              return (
+                <div
+                  key={s.name}
+                  className={`relative flex aspect-video flex-col items-center justify-center gap-1 font-mono transition-colors duration-300 ${
+                    active ? "bg-ink text-paper" : "bg-fog text-mute"
+                  }`}
+                >
+                  <Corners active={active} />
+                  <CamScene index={idx} active={active} />
+                  <div className="relative z-10 flex flex-col items-center gap-1">
+                    <span className="inline-flex items-center gap-1 text-xs font-bold tracking-tight">
+                      {active && (
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
+                      )}
+                      {s.name}
+                    </span>
+                    <span className="text-[10px] tabular-nums opacity-70">
+                      {fmtDuration(s.secs)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-mute">
+            <span className="h-1.5 w-1.5 rounded-full bg-ink" />
+            {t.dock.sync}
+          </div>
         </div>
-        <div className="h-1.5 w-full overflow-hidden bg-fog">
-          <div className="h-full bg-ink" style={{ width: `${p * 100}%` }} />
-        </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {STEPS.map((s, idx) => {
-            const active = idx === i;
-            return (
-              <div
-                key={s.name}
-                className={`relative flex aspect-video flex-col items-center justify-center gap-1 font-mono transition-colors duration-300 ${
-                  active ? "bg-ink text-paper" : "bg-fog text-mute"
-                }`}
-              >
-                <Corners active={active} />
-                <span className="inline-flex items-center gap-1 text-xs font-bold tracking-tight">
-                  {active && (
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
-                  )}
-                  {s.name}
-                </span>
-                <span className="text-[10px] tabular-nums opacity-70">
-                  {fmtDuration(s.secs)}
-                </span>
+      ) : (
+        <div className="space-y-3 p-4">
+          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 gap-y-3 font-mono text-xs">
+            {t.multistream.rows.map((r, idx) => (
+              <div key={idx} className="contents">
+                <span className="font-bold text-ink">{r[0]}</span>
+                <Toggle on={r[2] === "on"} />
+                <StatusDot status={r[3]} />
               </div>
-            );
-          })}
+            ))}
+          </div>
+          <div className="flex items-center justify-between border-t border-line pt-3 font-mono text-[11px] text-mute">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-ink" />
+              {t.dock.sync}
+            </span>
+            <Toggle on={true} />
+          </div>
         </div>
-        <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-mute">
-          <span className="h-1.5 w-1.5 rounded-full bg-ink" />
-          {t.dock.sync}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
 function fmtDuration(secs: number) {
   return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+}
+
+function CamScene({ index, active }: { index: number; active: boolean }) {
+  const stroke = active ? "rgba(255,255,255,0.38)" : "rgba(10,10,10,0.16)";
+  const g = {
+    fill: "none",
+    stroke,
+    strokeWidth: 1.4,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  return (
+    <svg
+      viewBox="0 0 48 27"
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden
+    >
+      {index === 0 && (
+        <g {...g}>
+          <circle cx="24" cy="8.5" r="3" />
+          <path d="M18.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
+          <line x1="7" y1="19" x2="41" y2="19" />
+          <circle cx="14" cy="16.8" r="1.8" />
+          <circle cx="34" cy="16.8" r="1.8" />
+        </g>
+      )}
+      {index === 1 && (
+        <g {...g}>
+          <line x1="6" y1="11" x2="42" y2="11" />
+          <circle cx="12" cy="19" r="2" />
+          <circle cx="19" cy="20.5" r="2" />
+          <circle cx="26" cy="19" r="2" />
+          <circle cx="33" cy="20.5" r="2" />
+        </g>
+      )}
+      {index === 2 && (
+        <g {...g}>
+          <circle cx="21" cy="14" r="8.5" />
+          <circle cx="21" cy="14" r="1.6" />
+          <line x1="34" y1="4.5" x2="25.5" y2="11.5" />
+          <circle cx="34" cy="4.5" r="1" />
+        </g>
+      )}
+    </svg>
+  );
 }
 
 function Corners({ active }: { active: boolean }) {
