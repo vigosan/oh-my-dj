@@ -140,7 +140,7 @@ function DockMock({ t }: { t: T }) {
     let raf = 0;
     let start: number | null = null;
     let idx = 0;
-    const durationMs = (secs: number) => 1800 + secs * 22;
+    const durationMs = (secs: number) => 1600 + secs * 52;
     const tick = (ts: number) => {
       if (start === null) start = ts;
       const prog = (ts - start) / durationMs(STEPS[idx].secs);
