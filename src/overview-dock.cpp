@@ -4,6 +4,7 @@
 #include <obs-module.h>
 
 #include <QCursor>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -65,6 +66,10 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	stopBtn_ = ToolButton(QStringLiteral("⏹"), T("OhMyDj.Overview.StopStream"), this);
 	auto *settingsBtn = ToolButton(QStringLiteral("⚙"), T("OhMyDj.Overview.Settings"), this);
 
+	auto *divider = new QFrame(this);
+	divider->setFrameShape(QFrame::VLine);
+	divider->setFrameShadow(QFrame::Sunken);
+
 	auto *toolbar = new QHBoxLayout();
 	toolbar->setSpacing(4);
 	toolbar->addWidget(skipBtn_);
@@ -72,6 +77,7 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	toolbar->addWidget(enableBtn_);
 	toolbar->addWidget(stopBtn_);
 	toolbar->addStretch();
+	toolbar->addWidget(divider);
 	toolbar->addWidget(settingsBtn);
 
 	auto *layout = new QVBoxLayout(this);
