@@ -9,6 +9,7 @@
 !/src
 !/tests
 !/docs
+!/site
 !.clang-format
 !.gersemirc
 !.gitignore
