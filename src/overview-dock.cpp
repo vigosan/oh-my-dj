@@ -77,7 +77,20 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	divider->setFrameShape(QFrame::VLine);
 	divider->setFrameShadow(QFrame::Sunken);
 
+	// Full-width line that sits just above the bottom toolbar, like the
+	// separator above the OBS Scenes/Sources dock toolbars.
+	auto *separator = new QFrame(this);
+	separator->setFrameShape(QFrame::HLine);
+	separator->setFrameShadow(QFrame::Sunken);
+
+	auto *info = new QVBoxLayout();
+	info->setContentsMargins(8, 8, 8, 8);
+	info->setSpacing(4);
+	info->addWidget(rotation_);
+	info->addWidget(stream_);
+
 	auto *toolbar = new QHBoxLayout();
+	toolbar->setContentsMargins(6, 4, 6, 4);
 	toolbar->setSpacing(4);
 	toolbar->addWidget(skipBtn_);
 	toolbar->addWidget(pauseBtn_);
@@ -87,10 +100,13 @@ OverviewDock::OverviewDock(RotationDock *rotation, MultistreamDock *multistream,
 	toolbar->addWidget(divider);
 	toolbar->addWidget(settingsBtn);
 
+	// Info at the top, toolbar pinned to the bottom edge of the dock.
 	auto *layout = new QVBoxLayout(this);
-	layout->setAlignment(Qt::AlignTop);
-	layout->addWidget(rotation_);
-	layout->addWidget(stream_);
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->setSpacing(0);
+	layout->addLayout(info);
+	layout->addStretch();
+	layout->addWidget(separator);
 	layout->addLayout(toolbar);
 
 	connect(skipBtn_, &QPushButton::clicked, rotation, &RotationDock::skip);
