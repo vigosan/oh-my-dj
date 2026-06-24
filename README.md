@@ -90,3 +90,19 @@ cmake --build --preset ubuntu-x86_64
 
 Requires Qt6 and the OBS frontend API (both enabled by default in
 `CMakeLists.txt`). The built module goes into your OBS `obs-plugins` directory.
+
+## License
+
+Oh My DJ is licensed under the GNU General Public License v2.0 or later
+(GPL-2.0-or-later); see [`LICENSE`](LICENSE). As a plugin that links against
+libobs, it is a derivative work of OBS Studio and inherits its license. The full
+source is available in this repository.
+
+## AI assistance disclaimer
+
+Oh My DJ is written and maintained by a human developer. AI coding tools were
+used to assist during development. All code is reviewed, tested, and validated
+by the author.
+
+Oh My DJ is a third-party plugin. It is not part of OBS Studio and is not
+developed by, affiliated with, or endorsed by the OBS Project.

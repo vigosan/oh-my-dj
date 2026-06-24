@@ -16,6 +16,7 @@
 !buildspec.json
 !CMakeLists.txt
 !CMakePresets.json
+!LICENSE
 !README.md
 
 # Exclude lock files

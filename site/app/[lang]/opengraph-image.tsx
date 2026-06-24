@@ -10,12 +10,12 @@ export function generateStaticParams() {
 
 const copy: Record<Lang, { tag: string; title: string; sub: string }> = {
   en: {
-    tag: "OBS STUDIO PLUGIN",
+    tag: "PLUGIN FOR OBS STUDIO",
     title: "Multistream & multi-camera for DJs",
     sub: "Stream to Twitch, YouTube and Facebook at once. Rotate cameras on a timer. Automatically.",
   },
   es: {
-    tag: "PLUGIN DE OBS STUDIO",
+    tag: "PLUGIN PARA OBS STUDIO",
     title: "Multistream y multicámara para DJs",
     sub: "Emite a Twitch, YouTube y Facebook a la vez. Rota cámaras con temporizador. Automático.",
   },
