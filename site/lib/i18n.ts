@@ -1,7 +1,72 @@
 export type Lang = "en" | "es";
 
+export const LANGS: Lang[] = ["en", "es"];
+
+export const SITE_URL = "https://oh-my-dj.vicent.io";
 export const REPO_URL = "https://github.com/vigosan/oh-my-dj";
 export const RELEASES_URL = "https://github.com/vigosan/oh-my-dj/releases";
+
+type Meta = {
+  title: string;
+  description: string;
+  keywords: string[];
+};
+
+export const meta: Record<Lang, Meta> = {
+  en: {
+    title: "Oh My DJ — OBS multistream & multi-camera plugin for DJs",
+    description:
+      "Free OBS Studio plugin for DJs: multistream to Twitch, YouTube and Facebook at once, and rotate multiple cameras on a timer — automatically. A lighter alternative to obs-multi-rtmp + Advanced Scene Switcher.",
+    keywords: [
+      "OBS multistream plugin",
+      "OBS multistream",
+      "multistream OBS",
+      "stream to Twitch and YouTube at the same time",
+      "multi camera OBS",
+      "multi cam OBS plugin",
+      "OBS scene switcher",
+      "automatic scene switcher OBS",
+      "rotate cameras OBS",
+      "OBS camera rotation timer",
+      "DJ live stream OBS",
+      "OBS plugin for DJs",
+      "OBS Studio plugin",
+      "OBS Studio dock",
+      "OBS dock plugin",
+      "OBS addon",
+      "best OBS plugins for streaming",
+      "obs-multi-rtmp alternative",
+      "Advanced Scene Switcher alternative",
+      "multistream Twitch YouTube Facebook",
+    ],
+  },
+  es: {
+    title: "Oh My DJ — Plugin de OBS multistream y multicámara para DJs",
+    description:
+      "Plugin gratuito de OBS Studio para DJs: emite a Twitch, YouTube y Facebook a la vez y rota varias cámaras con temporizador — automáticamente. Alternativa ligera a obs-multi-rtmp + Advanced Scene Switcher.",
+    keywords: [
+      "plugin OBS multistream",
+      "multistream OBS",
+      "emitir a Twitch y YouTube a la vez",
+      "multicámara OBS",
+      "multi cam OBS",
+      "cambio de escenas OBS",
+      "cambio automático de escenas OBS",
+      "rotar cámaras OBS",
+      "rotación de cámaras OBS temporizador",
+      "directo DJ OBS",
+      "plugin OBS para DJs",
+      "plugin OBS Studio",
+      "complemento OBS Studio",
+      "addon OBS",
+      "dock OBS",
+      "mejores plugins OBS para streaming",
+      "alternativa obs-multi-rtmp",
+      "alternativa Advanced Scene Switcher",
+      "multistream Twitch YouTube Facebook",
+    ],
+  },
+};
 
 type Feature = {
   tag: string;

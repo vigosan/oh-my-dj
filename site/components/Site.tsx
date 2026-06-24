@@ -1,7 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dict, type Lang, REPO_URL, RELEASES_URL } from "@/lib/i18n";
+
+const otherLang = (l: Lang): Lang => (l === "en" ? "es" : "en");
+
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+  as: Tag = "div",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+  as?: "div" | "section" | "li" | "span";
+}) {
+  const ref = useRef<HTMLElement>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reduce.matches) {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.1 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <Tag
+      ref={ref as React.Ref<never>}
+      data-shown={shown}
+      className={`reveal ${className}`}
+      style={{ ["--reveal-delay" as string]: `${delay}ms` }}
+    >
+      {children}
+    </Tag>
+  );
+}
 
 const PLATFORMS = [
   { os: "macOS", icon: AppleIcon, file: ".pkg" },
@@ -15,26 +64,12 @@ const STEPS = [
   { name: "CAM 3", secs: 60 },
 ];
 
-export default function Page() {
-  const [lang, setLang] = useState<Lang>("en");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("omd-lang") as Lang | null;
-    if (saved === "en" || saved === "es") setLang(saved);
-    else if (navigator.language.startsWith("es")) setLang("es");
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.lang = lang;
-    localStorage.setItem("omd-lang", lang);
-  }, [lang]);
-
+export default function Site({ lang }: { lang: Lang }) {
   const t = dict[lang];
-  const toggle = () => setLang((l) => (l === "en" ? "es" : "en"));
 
   return (
     <div className="min-h-screen">
-      <Header t={t} onToggle={toggle} />
+      <Header t={t} lang={lang} />
       <main>
         <Hero t={t} />
         <Pitch t={t} />
@@ -49,12 +84,12 @@ export default function Page() {
 
 type T = (typeof dict)["en"];
 
-function Header({ t, onToggle }: { t: T; onToggle: () => void }) {
+function Header({ t, lang }: { t: T; lang: Lang }) {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-paper/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <a href="#top" className="flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight">
-          <Logo className="h-7 w-7" />
+        <a href="#top" className="group flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight">
+          <Logo className="h-7 w-7 transition-transform duration-500 group-hover:rotate-180" />
           Oh My DJ
         </a>
         <nav className="hidden items-center gap-8 text-sm text-mute md:flex">
@@ -64,16 +99,17 @@ function Header({ t, onToggle }: { t: T; onToggle: () => void }) {
           <a href={REPO_URL} className="transition-colors hover:text-ink">{t.nav.github}</a>
         </nav>
         <div className="flex items-center gap-2">
-          <button
-            onClick={onToggle}
-            aria-label="Switch language"
-            className="h-9 w-12 border border-line font-mono text-xs font-medium text-mute transition-colors hover:border-ink hover:text-ink"
+          <a
+            href={`/${otherLang(lang)}`}
+            hrefLang={otherLang(lang)}
+            aria-label={lang === "en" ? "Cambiar a español" : "Switch to English"}
+            className="inline-flex h-9 w-12 items-center justify-center border border-line font-mono text-xs font-medium text-mute transition-colors hover:border-ink hover:text-ink"
           >
             {t.langLabel}
-          </button>
+          </a>
           <a
             href="#download"
-            className="hidden h-9 items-center border border-ink bg-ink px-4 text-sm font-medium text-paper transition-opacity hover:opacity-80 sm:inline-flex"
+            className="hidden h-9 items-center border border-ink bg-ink px-4 text-sm font-medium text-paper transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_var(--color-ink)] sm:inline-flex"
           >
             {t.hero.download}
           </a>
@@ -88,38 +124,43 @@ function Hero({ t }: { t: T }) {
     <section id="top" className="relative overflow-hidden border-b border-line">
       <div className="grid-bg pointer-events-none absolute inset-0 h-full" aria-hidden />
       <div className="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <span className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
-          <span className="h-1.5 w-1.5 rounded-full bg-ink" />
+        <Reveal as="span" className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink" />
           {t.hero.badge}
-        </span>
-        <h1 className="mt-8 text-4xl font-bold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl">
-          {t.hero.title}
-        </h1>
-        <p className="mt-3 text-2xl font-semibold leading-[1.1] text-ink/70 sm:text-3xl md:text-4xl">
-          {t.hero.titleAccent}
-        </p>
+        </Reveal>
+        <Reveal delay={60}>
+          <h1 className="mt-8 text-4xl font-bold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl">
+            {t.hero.title}
+          </h1>
+        </Reveal>
+        <Reveal delay={120}>
+          <p className="mt-3 text-2xl font-semibold leading-[1.1] text-ink/70 sm:text-3xl md:text-4xl">
+            {t.hero.titleAccent}
+          </p>
+        </Reveal>
         <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-          <div>
+          <Reveal delay={200}>
             <p className="max-w-xl text-lg leading-relaxed text-mute">{t.hero.subtitle}</p>
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <a
                 href="#download"
-                className="inline-flex h-12 items-center border border-ink bg-ink px-6 text-sm font-medium text-paper transition-opacity hover:opacity-80"
+                className="group inline-flex h-12 items-center gap-2 border border-ink bg-ink px-6 text-sm font-medium text-paper transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_var(--color-ink)]"
               >
                 {t.hero.download}
+                <span aria-hidden className="transition-transform duration-200 group-hover:translate-y-0.5">↓</span>
               </a>
               <a
                 href={REPO_URL}
-                className="inline-flex h-12 items-center border border-ink px-6 text-sm font-medium transition-colors hover:bg-fog"
+                className="inline-flex h-12 items-center border border-ink px-6 text-sm font-medium transition-colors duration-200 hover:bg-ink hover:text-paper"
               >
                 {t.hero.source}
               </a>
             </div>
             <p className="mt-8 max-w-xl font-mono text-xs leading-relaxed text-mute">{t.hero.replaces}</p>
-          </div>
-          <div className="flex justify-center lg:justify-end">
+          </Reveal>
+          <Reveal delay={280} className="flex justify-center lg:justify-end">
             <DockMock t={t} />
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -318,11 +359,13 @@ function Pitch({ t }: { t: T }) {
   return (
     <section className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Eyebrow>{t.pitch.tag}</Eyebrow>
-        <h2 className="mt-6 max-w-3xl text-3xl font-bold leading-tight tracking-tight md:text-5xl">
-          {t.pitch.title}
-        </h2>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.pitch.body}</p>
+        <Reveal>
+          <Eyebrow>{t.pitch.tag}</Eyebrow>
+          <h2 className="mt-6 max-w-3xl text-3xl font-bold leading-tight tracking-tight md:text-5xl">
+            {t.pitch.title}
+          </h2>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.pitch.body}</p>
+        </Reveal>
       </div>
     </section>
   );
@@ -332,13 +375,19 @@ function Features({ t }: { t: T }) {
   return (
     <section id="features" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Eyebrow>{t.nav.features}</Eyebrow>
-        <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-          {t.featuresTitle}
-        </h2>
+        <Reveal>
+          <Eyebrow>{t.nav.features}</Eyebrow>
+          <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+            {t.featuresTitle}
+          </h2>
+        </Reveal>
         <div className="mt-12 grid gap-12 md:grid-cols-2 md:gap-16">
-          <FeatureCard f={t.rotation} kind="rotation" />
-          <FeatureCard f={t.multistream} kind="stream" />
+          <Reveal delay={80}>
+            <FeatureCard f={t.rotation} kind="rotation" />
+          </Reveal>
+          <Reveal delay={160}>
+            <FeatureCard f={t.multistream} kind="stream" />
+          </Reveal>
         </div>
       </div>
     </section>
@@ -414,17 +463,19 @@ function How({ t }: { t: T }) {
   return (
     <section id="how" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Eyebrow>{t.howTag}</Eyebrow>
-        <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-          {t.howTitle}
-        </h2>
+        <Reveal>
+          <Eyebrow>{t.howTag}</Eyebrow>
+          <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+            {t.howTitle}
+          </h2>
+        </Reveal>
         <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">
-          {t.steps.map((s) => (
-            <div key={s.n} className="border-t border-ink/80 pt-5">
+          {t.steps.map((s, idx) => (
+            <Reveal key={s.n} delay={idx * 90} className="border-t border-ink/80 pt-5">
               <span className="font-mono text-sm font-bold tracking-tight text-mute">{s.n}</span>
               <h3 className="mt-4 text-lg font-bold tracking-tight">{s.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-mute">{s.body}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -486,34 +537,37 @@ function Download({ t }: { t: T }) {
   return (
     <section id="download" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Eyebrow>{t.download.tag}</Eyebrow>
-        <h2 className="mt-6 text-3xl font-bold leading-tight tracking-tight md:text-5xl">
-          {t.download.title}
-        </h2>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.download.body}</p>
-        {release && release.total > 0 && (
-          <p className="mt-4 font-mono text-xs text-mute">
-            ↓ {release.total.toLocaleString()} {t.download.downloads}
-          </p>
-        )}
+        <Reveal>
+          <Eyebrow>{t.download.tag}</Eyebrow>
+          <h2 className="mt-6 text-3xl font-bold leading-tight tracking-tight md:text-5xl">
+            {t.download.title}
+          </h2>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.download.body}</p>
+          {release && release.total > 0 && (
+            <p className="mt-4 font-mono text-xs text-mute">
+              ↓ {release.total.toLocaleString()} {t.download.downloads}
+            </p>
+          )}
+        </Reveal>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          {PLATFORMS.map(({ os, icon: Icon, file }) => {
+          {PLATFORMS.map(({ os, icon: Icon, file }, idx) => {
             const asset = release?.assets[os];
             return (
-              <a
-                key={os}
-                href={asset?.url ?? RELEASES_URL}
-                className="group flex flex-col items-center gap-4 bg-fog px-6 py-12 text-center transition-colors hover:bg-ink hover:text-paper"
-              >
-                <Icon className="h-10 w-10" />
-                <span className="text-lg font-medium tracking-tight">{os}</span>
-                <span className="inline-flex items-center gap-1.5 font-mono text-xs text-mute group-hover:text-paper/70">
-                  {file}
-                  <span aria-hidden>↓</span>
-                  {asset && <span className="opacity-70">· {asset.count.toLocaleString()}</span>}
-                </span>
-              </a>
+              <Reveal key={os} delay={idx * 80}>
+                <a
+                  href={asset?.url ?? RELEASES_URL}
+                  className="group flex h-full flex-col items-center gap-4 bg-fog px-6 py-12 text-center transition-[transform,background-color,color] duration-200 hover:-translate-y-1 hover:bg-ink hover:text-paper"
+                >
+                  <Icon className="h-10 w-10 transition-transform duration-200 group-hover:scale-110" />
+                  <span className="text-lg font-medium tracking-tight">{os}</span>
+                  <span className="inline-flex items-center gap-1.5 font-mono text-xs text-mute group-hover:text-paper/70">
+                    {file}
+                    <span aria-hidden className="transition-transform duration-200 group-hover:translate-y-0.5">↓</span>
+                    {asset && <span className="opacity-70">· {asset.count.toLocaleString()}</span>}
+                  </span>
+                </a>
+              </Reveal>
             );
           })}
         </div>
