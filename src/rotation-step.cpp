@@ -21,4 +21,33 @@ int ResolveNextIndex(const std::vector<RotationStep> &steps, int fromIndex)
 	return (fromIndex + 1) % count; // wrap => loop
 }
 
+int ResolveShuffleIndex(int count, int current, int previous, int roll)
+{
+	if (count <= 0)
+		return -1;
+	if (count == 1)
+		return 0;
+
+	// Exclude the current step; exclude the previous one too, but only while
+	// that still leaves something to pick (i.e. once there are >= 3 steps).
+	const bool excludePrevious = count >= 3;
+
+	std::vector<int> candidates;
+	candidates.reserve(count);
+	for (int i = 0; i < count; ++i) {
+		if (i == current)
+			continue;
+		if (excludePrevious && i == previous)
+			continue;
+		candidates.push_back(i);
+	}
+
+	if (candidates.empty())
+		return current; // degenerate guard; should not happen given the rules above
+
+	const int r = ((roll % static_cast<int>(candidates.size())) + static_cast<int>(candidates.size())) %
+		      static_cast<int>(candidates.size());
+	return candidates[r];
+}
+
 } // namespace ohmydj

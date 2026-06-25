@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QTimer>
 
+#include <random>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,12 @@ public:
 	void setEnabled(bool enabled);
 	bool enabled() const { return enabled_; }
 
+	// Shuffle mode: advance to a random step instead of the linear flow. The
+	// pick avoids the current scene (and the previous one, once there are >= 3
+	// steps), and ignores each step's onExpire jump.
+	void setShuffle(bool shuffle) { shuffle_ = shuffle; }
+	bool shuffle() const { return shuffle_; }
+
 	// The flow only runs while OBS is actually streaming.
 	void setStreaming(bool streaming);
 
@@ -39,8 +46,9 @@ public:
 
 	int currentIndex() const { return current_; }
 
-	// Where the flow goes when the active step ends (-1 if there is no flow).
-	int nextIndex() const { return ResolveNextIndex(steps_, current_); }
+	// Where the flow goes when the active step ends (-1 if there is no flow, or
+	// in shuffle mode where the next step is decided randomly at advance time).
+	int nextIndex() const { return shuffle_ ? -1 : ResolveNextIndex(steps_, current_); }
 
 	// Seconds left on the active step, or -1 when parked/idle.
 	int remainingSeconds() const
@@ -71,9 +79,12 @@ private:
 	QTimer timer_;
 	bool enabled_ = false;
 	bool streaming_ = false;
+	bool shuffle_ = false;
 	bool paused_ = false;
 	int pausedRemainingMs_ = 0;
 	int current_ = -1;
+	int previous_ = -1; // step before current_, so shuffle can avoid bouncing back
+	std::mt19937 rng_{std::random_device{}()};
 
 	// Distinguish scene changes we trigger ourselves from the DJ's.
 	bool expectingSelfSwitch_ = false;
@@ -84,6 +95,7 @@ private:
 struct RotationConfig {
 	std::vector<RotationStep> steps;
 	bool enabled = false;
+	bool shuffle = false;
 };
 
 RotationConfig LoadRotationConfig();

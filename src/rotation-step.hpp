@@ -25,4 +25,13 @@ struct RotationStep {
 // Pure logic, no OBS/Qt dependencies, so it is unit-testable on its own.
 int ResolveNextIndex(const std::vector<RotationStep> &steps, int fromIndex);
 
+// Index of the next step in shuffle mode: a random pick that avoids `current`
+// and — once there are >= 3 steps — also avoids `previous`, so the flow never
+// stutters back and forth between the same two scenes. `roll` is a non-negative
+// integer supplied by the caller (the RNG in production); it is mapped onto the
+// surviving candidates, so any value is valid and the result is deterministic.
+//   - count <= 1 => 0 (a single scene loops onto itself), or -1 if count == 0
+// Pure logic, no OBS/Qt/RNG dependencies, so it is unit-testable on its own.
+int ResolveShuffleIndex(int count, int current, int previous, int roll);
+
 } // namespace ohmydj

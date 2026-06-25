@@ -63,6 +63,8 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	editRow->addStretch();
 
 	enable_ = new QCheckBox(T("OhMyDj.Rotation.Enable"), this);
+	shuffle_ = new QCheckBox(T("OhMyDj.Rotation.Shuffle"), this);
+	shuffle_->setToolTip(T("OhMyDj.Rotation.ShuffleHint"));
 	status_ = new QLabel(this);
 	tick_ = new QTimer(this);
 	tick_->setInterval(1000);
@@ -71,6 +73,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 
 	auto *statusRow = new QHBoxLayout();
 	statusRow->addWidget(enable_);
+	statusRow->addWidget(shuffle_);
 	statusRow->addStretch();
 	statusRow->addWidget(status_);
 
@@ -84,6 +87,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	connect(upBtn, &QPushButton::clicked, this, [this]() { onMove(-1); });
 	connect(downBtn, &QPushButton::clicked, this, [this]() { onMove(1); });
 	connect(enable_, &QCheckBox::toggled, this, &RotationDock::onEnableToggled);
+	connect(shuffle_, &QCheckBox::toggled, this, &RotationDock::onShuffleToggled);
 	connect(&engine_, &RotationEngine::stepChanged, this, &RotationDock::onStepChanged);
 	connect(tick_, &QTimer::timeout, this, &RotationDock::refreshStatus);
 
@@ -92,9 +96,11 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	for (const RotationStep &step : config.steps)
 		addRow(step);
 	enable_->setChecked(config.enabled);
+	shuffle_->setChecked(config.shuffle);
 	updating_ = false;
 
 	engine_.setSteps(collectSteps());
+	engine_.setShuffle(config.shuffle);
 	obsStreaming_ = obs_frontend_streaming_active();
 	engine_.setStreaming(obsStreaming_);
 	engine_.setEnabled(config.enabled);
@@ -249,15 +255,23 @@ void RotationDock::onEdited()
 		return;
 	const std::vector<RotationStep> steps = collectSteps();
 	engine_.setSteps(steps);
-	SaveRotationConfig({steps, enable_->isChecked()});
+	SaveRotationConfig({steps, enable_->isChecked(), shuffle_->isChecked()});
 }
 
 void RotationDock::onEnableToggled(bool enabled)
 {
 	engine_.setEnabled(enabled);
 	if (!updating_)
-		SaveRotationConfig({collectSteps(), enabled});
+		SaveRotationConfig({collectSteps(), enabled, shuffle_->isChecked()});
 	onStepChanged(engine_.currentIndex());
+}
+
+void RotationDock::onShuffleToggled(bool shuffle)
+{
+	engine_.setShuffle(shuffle);
+	if (!updating_)
+		SaveRotationConfig({collectSteps(), enable_->isChecked(), shuffle});
+	refreshStatus();
 }
 
 void RotationDock::onStepChanged(int index)
@@ -352,7 +366,7 @@ void RotationDock::renameScene(const QString &from, const QString &to)
 
 void RotationDock::persist()
 {
-	SaveRotationConfig({collectSteps(), enable_->isChecked()});
+	SaveRotationConfig({collectSteps(), enable_->isChecked(), shuffle_->isChecked()});
 }
 
 } // namespace ohmydj

@@ -51,12 +51,14 @@ private:
 	void onMove(int delta);
 	void onEdited();
 	void onEnableToggled(bool enabled);
+	void onShuffleToggled(bool shuffle);
 	void onStepChanged(int index);
 	void refreshStatus();
 
 	RotationEngine engine_;
 	QTableWidget *table_;
 	QCheckBox *enable_;
+	QCheckBox *shuffle_;
 	QLabel *status_;
 	QTimer *tick_;
 	bool obsStreaming_ = false;

@@ -112,6 +112,7 @@ void RotationEngine::evaluate()
 void RotationEngine::arm(int index)
 {
 	paused_ = false;
+	previous_ = -1;
 	current_ = index;
 	long long ms = steps_[index].seconds() * 1000;
 	if (ms < 1000)
@@ -125,6 +126,7 @@ void RotationEngine::park()
 	timer_.stop();
 	paused_ = false;
 	pausedRemainingMs_ = 0;
+	previous_ = -1;
 	if (current_ != -1) {
 		current_ = -1;
 		emit stepChanged(-1);
@@ -133,12 +135,20 @@ void RotationEngine::park()
 
 void RotationEngine::advance()
 {
-	const int next = ResolveNextIndex(steps_, current_);
+	const int count = static_cast<int>(steps_.size());
+	int next;
+	if (shuffle_) {
+		const int roll = count > 0 ? static_cast<int>(rng_() % static_cast<unsigned>(count)) : 0;
+		next = ResolveShuffleIndex(count, current_, previous_, roll);
+	} else {
+		next = ResolveNextIndex(steps_, current_);
+	}
 	if (next < 0) {
 		park();
 		return;
 	}
 	paused_ = false;
+	previous_ = current_;
 	current_ = next;
 	pendingScene_ = steps_[next].scene;
 	expectingSelfSwitch_ = true;
@@ -206,6 +216,7 @@ RotationConfig LoadRotationConfig()
 		return config;
 
 	config.enabled = obs_data_get_bool(root, "enabled");
+	config.shuffle = obs_data_get_bool(root, "shuffle");
 
 	obs_data_array_t *arr = obs_data_get_array(root, "steps");
 	if (arr) {
@@ -236,6 +247,7 @@ void SaveRotationConfig(const RotationConfig &config)
 
 	obs_data_t *root = obs_data_create();
 	obs_data_set_bool(root, "enabled", config.enabled);
+	obs_data_set_bool(root, "shuffle", config.shuffle);
 	obs_data_array_t *arr = obs_data_array_create();
 	for (const RotationStep &step : config.steps) {
 		obs_data_t *o = obs_data_create();
