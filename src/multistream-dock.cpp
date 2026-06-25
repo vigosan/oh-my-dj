@@ -54,9 +54,12 @@ QString StatusText(StreamStatus status)
 	}
 }
 
-void ApplyStatus(QLabel *label, StreamStatus status)
+void ApplyStatus(QLabel *label, StreamStatus status, const QString &suffix = QString())
 {
-	label->setText(StatusText(status));
+	QString text = StatusText(status);
+	if (!suffix.isEmpty())
+		text += QStringLiteral(" · ") + suffix;
+	label->setText(text);
 	const char *color = "";
 	switch (status) {
 	case StreamStatus::Live:
@@ -125,6 +128,8 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QWidget(parent)
 	connect(&engine_, &MultistreamEngine::runningChanged, this, &MultistreamDock::onRunningChanged);
 	connect(&engine_, &MultistreamEngine::targetStatusChanged, this,
 		&MultistreamDock::onTargetStatusChanged);
+	connect(&engine_, &MultistreamEngine::targetHealthChanged, this,
+		&MultistreamDock::onTargetHealthChanged);
 
 	obsStreaming_ = obs_frontend_streaming_active();
 
@@ -289,10 +294,10 @@ void MultistreamDock::onRunningChanged(bool running)
 	table_->setEnabled(!running);
 	if (!running) {
 		statuses_.assign(table_->rowCount(), static_cast<int>(StreamStatus::Idle));
-		for (int row = 0; row < table_->rowCount(); ++row) {
-			if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(row, ColStatus)))
-				ApplyStatus(label, StreamStatus::Idle);
-		}
+		bitrates_.assign(table_->rowCount(), 0);
+		drops_.assign(table_->rowCount(), 0);
+		for (int row = 0; row < table_->rowCount(); ++row)
+			renderStatus(row);
 	}
 	emitSummary();
 }
@@ -301,12 +306,57 @@ void MultistreamDock::onTargetStatusChanged(int index, int status)
 {
 	if (index < 0 || index >= table_->rowCount())
 		return;
-	if (auto *label = qobject_cast<QLabel *>(table_->cellWidget(index, ColStatus)))
-		ApplyStatus(label, static_cast<StreamStatus>(status));
 	if (index >= static_cast<int>(statuses_.size()))
 		statuses_.resize(index + 1, static_cast<int>(StreamStatus::Idle));
 	statuses_[index] = status;
+	// A fresh connection has no health figures yet; clear any stale ones.
+	if (status != static_cast<int>(StreamStatus::Live)) {
+		if (index < static_cast<int>(bitrates_.size()))
+			bitrates_[index] = 0;
+		if (index < static_cast<int>(drops_.size()))
+			drops_[index] = 0;
+	}
+	renderStatus(index);
 	emitSummary();
+}
+
+void MultistreamDock::onTargetHealthChanged(int index, int bitrateKbps, int droppedPercent)
+{
+	if (index < 0 || index >= table_->rowCount())
+		return;
+	if (index >= static_cast<int>(bitrates_.size()))
+		bitrates_.resize(index + 1, 0);
+	if (index >= static_cast<int>(drops_.size()))
+		drops_.resize(index + 1, 0);
+	bitrates_[index] = bitrateKbps;
+	drops_[index] = droppedPercent;
+	renderStatus(index);
+}
+
+void MultistreamDock::renderStatus(int row)
+{
+	if (row < 0 || row >= table_->rowCount())
+		return;
+	auto *label = qobject_cast<QLabel *>(table_->cellWidget(row, ColStatus));
+	if (!label)
+		return;
+
+	const StreamStatus status = row < static_cast<int>(statuses_.size())
+					    ? static_cast<StreamStatus>(statuses_[row])
+					    : StreamStatus::Idle;
+
+	QString suffix;
+	if (status == StreamStatus::Live) {
+		const int kbps = row < static_cast<int>(bitrates_.size()) ? bitrates_[row] : 0;
+		const int pct = row < static_cast<int>(drops_.size()) ? drops_[row] : 0;
+		if (kbps > 0)
+			suffix = T("OhMyDj.Stream.Bitrate").arg(kbps);
+		if (pct > 0) {
+			const QString drop = T("OhMyDj.Stream.Dropped").arg(pct);
+			suffix = suffix.isEmpty() ? drop : suffix + QStringLiteral(" · ") + drop;
+		}
+	}
+	ApplyStatus(label, status, suffix);
 }
 
 void MultistreamDock::persist()

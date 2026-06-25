@@ -37,6 +37,11 @@ signals:
 	void runningChanged(bool running);
 	// `status` is a StreamStatus; `index` refers to the target's row.
 	void targetStatusChanged(int index, int status);
+	// Live health sampled once a second while running; `index` is the row.
+	void targetHealthChanged(int index, int bitrateKbps, int droppedPercent);
+
+private slots:
+	void sampleHealth();
 
 private:
 	struct Impl;

@@ -8,11 +8,14 @@
 
 #include <string>
 
+#include "stream-health.hpp"
+
 namespace ohmydj {
 
 namespace {
 
 constexpr int kReconnectDelayMs = 5000;
+constexpr int kHealthIntervalMs = 1000;
 
 std::string ConfigFilePath()
 {
@@ -34,6 +37,7 @@ struct OutputContext {
 	int index;
 	obs_output_t *output = nullptr;
 	obs_service_t *service = nullptr;
+	uint64_t lastBytes = 0; // cumulative bytes at the previous health sample
 };
 
 struct MultistreamEngine::Impl {
@@ -45,6 +49,7 @@ struct MultistreamEngine::Impl {
 	obs_encoder_t *venc = nullptr;
 	obs_encoder_t *aenc = nullptr;
 	std::vector<OutputContext *> outputs;
+	QTimer healthTimer;
 };
 
 static void EmitStatus(OutputContext *ctx, StreamStatus status)
@@ -80,7 +85,11 @@ static void OnOutputStop(void *data, calldata_t *cd)
 		engine, [engine, index]() { engine->reconnect(index); }, Qt::QueuedConnection);
 }
 
-MultistreamEngine::MultistreamEngine(QObject *parent) : QObject(parent), d_(std::make_unique<Impl>()) {}
+MultistreamEngine::MultistreamEngine(QObject *parent) : QObject(parent), d_(std::make_unique<Impl>())
+{
+	d_->healthTimer.setInterval(kHealthIntervalMs);
+	connect(&d_->healthTimer, &QTimer::timeout, this, &MultistreamEngine::sampleHealth);
+}
 
 MultistreamEngine::~MultistreamEngine()
 {
@@ -179,6 +188,7 @@ void MultistreamEngine::start(bool useMainEncoders)
 	}
 
 	d_->running = true;
+	d_->healthTimer.start();
 	emit runningChanged(true);
 }
 
@@ -186,6 +196,8 @@ void MultistreamEngine::stop()
 {
 	if (!d_->running)
 		return;
+
+	d_->healthTimer.stop();
 
 	for (OutputContext *ctx : d_->outputs) {
 		signal_handler_t *sh = obs_output_get_signal_handler(ctx->output);
@@ -229,6 +241,23 @@ void MultistreamEngine::reconnect(int index)
 			return;
 		}
 	});
+}
+
+void MultistreamEngine::sampleHealth()
+{
+	for (OutputContext *ctx : d_->outputs) {
+		if (!ctx->output)
+			continue;
+		const uint64_t bytes = obs_output_get_total_bytes(ctx->output);
+		const int kbps = BitrateKbps(ctx->lastBytes, bytes, kHealthIntervalMs);
+		ctx->lastBytes = bytes;
+
+		const int total = obs_output_get_total_frames(ctx->output);
+		const int dropped = obs_output_get_frames_dropped(ctx->output);
+		const int pct = DroppedPercent(dropped, total);
+
+		emit targetHealthChanged(ctx->index, kbps, pct);
+	}
 }
 
 StreamConfig LoadStreamConfig()

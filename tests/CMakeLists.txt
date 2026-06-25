@@ -29,3 +29,11 @@ add_executable(
 )
 target_include_directories(ohmydj-preset-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 add_test(NAME presets COMMAND ohmydj-preset-tests)
+
+add_executable(
+  ohmydj-health-tests
+  test_health.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/stream-health.cpp
+)
+target_include_directories(ohmydj-health-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+add_test(NAME health COMMAND ohmydj-health-tests)
