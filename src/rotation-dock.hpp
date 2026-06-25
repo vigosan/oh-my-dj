@@ -43,8 +43,10 @@ private:
 	void addRow(const RotationStep &step);
 	std::vector<RotationStep> collectSteps() const;
 	QStringList sceneNames() const;
+	QStringList transitionNames() const;
 	void fillSceneCombo(QComboBox *combo, const QString &selected) const;
 	void fillOnExpireCombo(QComboBox *combo, const QString &selected) const;
+	void fillTransitionCombo(QComboBox *combo, const QString &selected) const;
 
 	void onAdd();
 	void onRemove();

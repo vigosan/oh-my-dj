@@ -29,6 +29,26 @@ void SetCurrentSceneByName(const std::string &name)
 	obs_source_release(scene);
 }
 
+// Make `name` the active transition before the next scene switch. A blank name
+// (or one OBS no longer knows) leaves the current transition untouched, so the
+// switch falls back to whatever OBS has selected globally.
+void ApplyTransitionByName(const std::string &name)
+{
+	if (name.empty())
+		return;
+
+	obs_frontend_source_list transitions = {};
+	obs_frontend_get_transitions(&transitions);
+	for (size_t i = 0; i < transitions.sources.num; ++i) {
+		obs_source_t *t = transitions.sources.array[i];
+		if (name == obs_source_get_name(t)) {
+			obs_frontend_set_current_transition(t);
+			break;
+		}
+	}
+	obs_frontend_source_list_free(&transitions);
+}
+
 std::string ConfigFilePath()
 {
 	char *profile = obs_frontend_get_current_profile_path();
@@ -152,6 +172,7 @@ void RotationEngine::advance()
 	current_ = next;
 	pendingScene_ = steps_[next].scene;
 	expectingSelfSwitch_ = true;
+	ApplyTransitionByName(steps_[next].transition);
 	SetCurrentSceneByName(pendingScene_);
 
 	long long ms = steps_[next].seconds() * 1000;
@@ -230,6 +251,7 @@ RotationConfig LoadRotationConfig()
 				step.amount = 1;
 			step.unit = UnitFromInt(static_cast<int>(obs_data_get_int(o, "unit")));
 			step.onExpire = obs_data_get_string(o, "on_expire");
+			step.transition = obs_data_get_string(o, "transition");
 			config.steps.push_back(std::move(step));
 			obs_data_release(o);
 		}
@@ -255,6 +277,7 @@ void SaveRotationConfig(const RotationConfig &config)
 		obs_data_set_int(o, "amount", step.amount);
 		obs_data_set_int(o, "unit", static_cast<int>(step.unit));
 		obs_data_set_string(o, "on_expire", step.onExpire.c_str());
+		obs_data_set_string(o, "transition", step.transition.c_str());
 		obs_data_array_push_back(arr, o);
 		obs_data_release(o);
 	}

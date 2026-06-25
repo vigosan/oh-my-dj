@@ -21,7 +21,7 @@ namespace ohmydj {
 
 namespace {
 
-enum Column { ColScene = 0, ColAmount, ColUnit, ColOnExpire, ColCount };
+enum Column { ColScene = 0, ColAmount, ColUnit, ColOnExpire, ColTransition, ColCount };
 
 QString T(const char *key)
 {
@@ -44,7 +44,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	table_->setColumnCount(ColCount);
 	table_->setHorizontalHeaderLabels(
 		{T("OhMyDj.Col.Scene"), T("OhMyDj.Col.Duration"), T("OhMyDj.Col.Unit"),
-		 T("OhMyDj.Col.OnExpire")});
+		 T("OhMyDj.Col.OnExpire"), T("OhMyDj.Col.Transition")});
 	table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 	table_->verticalHeader()->setVisible(false);
 	table_->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -141,6 +141,29 @@ QStringList RotationDock::sceneNames() const
 	return names;
 }
 
+QStringList RotationDock::transitionNames() const
+{
+	QStringList names;
+	obs_frontend_source_list transitions = {};
+	obs_frontend_get_transitions(&transitions);
+	for (size_t i = 0; i < transitions.sources.num; ++i)
+		names << QString::fromUtf8(obs_source_get_name(transitions.sources.array[i]));
+	obs_frontend_source_list_free(&transitions);
+	return names;
+}
+
+void RotationDock::fillTransitionCombo(QComboBox *combo, const QString &selected) const
+{
+	combo->blockSignals(true);
+	combo->clear();
+	combo->addItem(T("OhMyDj.Transition.Default")); // empty selection => OBS's current transition
+	combo->addItems(transitionNames());
+	if (!selected.isEmpty() && combo->findText(selected) < 0)
+		combo->addItem(selected);
+	combo->setCurrentIndex(qMax(0, combo->findText(selected)));
+	combo->blockSignals(false);
+}
+
 void RotationDock::fillSceneCombo(QComboBox *combo, const QString &selected) const
 {
 	combo->blockSignals(true);
@@ -187,10 +210,15 @@ void RotationDock::addRow(const RotationStep &step)
 	fillOnExpireCombo(onExpire, QString::fromStdString(step.onExpire));
 	table_->setCellWidget(row, ColOnExpire, onExpire);
 
+	auto *transition = new QComboBox();
+	fillTransitionCombo(transition, QString::fromStdString(step.transition));
+	table_->setCellWidget(row, ColTransition, transition);
+
 	connect(scene, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 	connect(amount, &QSpinBox::valueChanged, this, &RotationDock::onEdited);
 	connect(unit, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 	connect(onExpire, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
+	connect(transition, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 }
 
 std::vector<RotationStep> RotationDock::collectSteps() const
@@ -204,6 +232,9 @@ std::vector<RotationStep> RotationDock::collectSteps() const
 		QComboBox *onExpire = Combo(table_, row, ColOnExpire);
 		step.onExpire = onExpire->currentIndex() == 0 ? std::string()
 								: onExpire->currentText().toStdString();
+		QComboBox *transition = Combo(table_, row, ColTransition);
+		step.transition = transition->currentIndex() == 0 ? std::string()
+								  : transition->currentText().toStdString();
 		steps.push_back(std::move(step));
 	}
 	return steps;
@@ -337,6 +368,10 @@ void RotationDock::refreshScenes()
 		QComboBox *onExpire = Combo(table_, row, ColOnExpire);
 		fillOnExpireCombo(onExpire, onExpire->currentIndex() == 0 ? QString()
 									 : onExpire->currentText());
+		QComboBox *transition = Combo(table_, row, ColTransition);
+		fillTransitionCombo(transition, transition->currentIndex() == 0
+							? QString()
+							: transition->currentText());
 	}
 	updating_ = false;
 }
