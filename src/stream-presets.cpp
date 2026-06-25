@@ -33,4 +33,56 @@ bool IsPresetUrl(const std::string &url)
 	return false;
 }
 
+namespace {
+
+// Friendly label -> exact OBS rtmp_common service name (from services.json).
+struct PlatformMap {
+	const char *label;
+	const char *service;
+};
+
+const std::vector<PlatformMap> &PlatformMaps()
+{
+	static const std::vector<PlatformMap> maps = {
+		{"Twitch", "Twitch"},
+		{"YouTube", "YouTube - RTMPS"},
+		{"Facebook Live", "Facebook Live"},
+	};
+	return maps;
+}
+
+} // namespace
+
+std::string PlatformServiceName(const std::string &label)
+{
+	for (const PlatformMap &m : PlatformMaps()) {
+		if (label == m.label)
+			return m.service;
+	}
+	return "";
+}
+
+MigratedTarget MigrateLegacyTarget(const std::string &name, const std::string &url)
+{
+	// Prefer the label; fall back to recognising the legacy preset URL when the
+	// user renamed the row but kept the platform's server address.
+	std::string service = PlatformServiceName(name);
+	if (service.empty() && !url.empty()) {
+		for (const StreamPreset &preset : StreamPresets()) {
+			if (!preset.url.empty() && preset.url == url) {
+				service = PlatformServiceName(preset.label);
+				break;
+			}
+		}
+	}
+
+	MigratedTarget out;
+	if (!service.empty()) {
+		out.service = service;
+		out.server = "auto";
+		out.isCustom = false;
+	}
+	return out;
+}
+
 } // namespace ohmydj
