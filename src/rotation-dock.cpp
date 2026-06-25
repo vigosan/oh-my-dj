@@ -9,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTableWidget>
@@ -16,6 +17,7 @@
 #include <QVBoxLayout>
 
 #include "duration.hpp"
+#include "suggest-dialog.hpp"
 
 namespace ohmydj {
 
@@ -54,6 +56,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	auto *removeBtn = new QPushButton(T("OhMyDj.Btn.Remove"), this);
 	auto *upBtn = new QPushButton(T("OhMyDj.Btn.Up"), this);
 	auto *downBtn = new QPushButton(T("OhMyDj.Btn.Down"), this);
+	auto *suggestBtn = new QPushButton(T("OhMyDj.Btn.Suggest"), this);
 
 	auto *editRow = new QHBoxLayout();
 	editRow->addWidget(addBtn);
@@ -61,6 +64,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	editRow->addWidget(upBtn);
 	editRow->addWidget(downBtn);
 	editRow->addStretch();
+	editRow->addWidget(suggestBtn);
 
 	enable_ = new QCheckBox(T("OhMyDj.Rotation.Enable"), this);
 	shuffle_ = new QCheckBox(T("OhMyDj.Rotation.Shuffle"), this);
@@ -84,6 +88,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 
 	connect(addBtn, &QPushButton::clicked, this, &RotationDock::onAdd);
 	connect(removeBtn, &QPushButton::clicked, this, &RotationDock::onRemove);
+	connect(suggestBtn, &QPushButton::clicked, this, &RotationDock::onSuggest);
 	connect(upBtn, &QPushButton::clicked, this, [this]() { onMove(-1); });
 	connect(downBtn, &QPushButton::clicked, this, [this]() { onMove(1); });
 	connect(enable_, &QCheckBox::toggled, this, &RotationDock::onEnableToggled);
@@ -256,6 +261,39 @@ void RotationDock::onRemove()
 	if (row < 0)
 		return;
 	table_->removeRow(row);
+	onEdited();
+}
+
+void RotationDock::onSuggest()
+{
+	const QStringList scenes = sceneNames();
+	if (scenes.isEmpty()) {
+		QMessageBox::information(this, T("OhMyDj.Suggest.Title"),
+					 T("OhMyDj.Suggest.NoScenes"));
+		return;
+	}
+
+	SuggestDialog dialog(scenes, transitionNames(), this);
+	if (dialog.exec() != QDialog::Accepted)
+		return;
+
+	const std::vector<RotationStep> plan = BuildRotationPlan(dialog.plan());
+	if (plan.empty())
+		return;
+
+	if (table_->rowCount() > 0) {
+		const auto answer = QMessageBox::question(this, T("OhMyDj.Suggest.Title"),
+							  T("OhMyDj.Suggest.Replace"));
+		if (answer != QMessageBox::Yes)
+			return;
+	}
+
+	updating_ = true;
+	while (table_->rowCount() > 0)
+		table_->removeRow(0);
+	for (const RotationStep &step : plan)
+		addRow(step);
+	updating_ = false;
 	onEdited();
 }
 

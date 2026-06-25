@@ -49,10 +49,14 @@ target_sources(
     src/duration.cpp
     src/rotation-step.hpp
     src/rotation-step.cpp
+    src/rotation-plan.hpp
+    src/rotation-plan.cpp
     src/rotation-engine.hpp
     src/rotation-engine.cpp
     src/rotation-dock.hpp
     src/rotation-dock.cpp
+    src/suggest-dialog.hpp
+    src/suggest-dialog.cpp
     src/stream-target.hpp
     src/stream-health.hpp
     src/stream-health.cpp

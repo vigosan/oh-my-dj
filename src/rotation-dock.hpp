@@ -50,6 +50,7 @@ private:
 
 	void onAdd();
 	void onRemove();
+	void onSuggest();
 	void onMove(int delta);
 	void onEdited();
 	void onEnableToggled(bool enabled);

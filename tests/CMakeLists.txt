@@ -37,3 +37,13 @@ add_executable(
 )
 target_include_directories(ohmydj-health-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 add_test(NAME health COMMAND ohmydj-health-tests)
+
+add_executable(
+  ohmydj-plan-tests
+  test_plan.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/rotation-plan.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/duration.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/rotation-step.cpp
+)
+target_include_directories(ohmydj-plan-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+add_test(NAME plan COMMAND ohmydj-plan-tests)
