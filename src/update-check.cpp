@@ -20,7 +20,9 @@ std::string HttpGet(const std::string &url);
 namespace {
 
 const char *kLatestReleaseApi = "https://api.github.com/repos/vigosan/oh-my-dj/releases/latest";
-const char *kReleasesPage = "https://github.com/vigosan/oh-my-dj/releases";
+// Send users to the curated download page on the project site rather than the
+// raw GitHub releases list.
+const char *kDownloadPage = "https://oh-my-dj.vicent.io/#download";
 
 QVector<int> ParseVersion(const QString &version)
 {
@@ -70,10 +72,7 @@ void CheckForUpdate(QObject *context, const QString &currentVersion,
 			return;
 		}
 
-		QString url = release.value("html_url").toString();
-		if (url.isEmpty())
-			url = QString::fromUtf8(kReleasesPage);
-		notifier->report(tag, url);
+		notifier->report(tag, QString::fromUtf8(kDownloadPage));
 	}).detach();
 }
 
