@@ -31,6 +31,25 @@ QLineEdit *Edit(QTableWidget *table, int row, int col)
 	return qobject_cast<QLineEdit *>(table->cellWidget(row, col));
 }
 
+// For a known platform OBS resolves the ingest server itself, so the URL cell
+// becomes a non-editable "Auto (OBS)" hint. A custom destination keeps an
+// editable URL field. `customUrl` is only used in the custom case.
+void ApplyUrlMode(QLineEdit *url, const QString &platformLabel, const QString &customUrl)
+{
+	const bool known = !PlatformServiceName(platformLabel.toStdString()).empty();
+	url->blockSignals(true);
+	if (known) {
+		url->setText(T("OhMyDj.Stream.ServerAuto"));
+		url->setReadOnly(true);
+		url->setEnabled(false);
+	} else {
+		url->setText(customUrl);
+		url->setReadOnly(false);
+		url->setEnabled(true);
+	}
+	url->blockSignals(false);
+}
+
 QCheckBox *ActiveBox(QTableWidget *table, int row)
 {
 	QWidget *cell = table->cellWidget(row, ColActive);
@@ -162,6 +181,7 @@ void MultistreamDock::addRow(const StreamTarget &target)
 		platform->setCurrentText(name);
 	table_->setCellWidget(row, ColName, platform);
 	table_->setCellWidget(row, ColUrl, url);
+	ApplyUrlMode(url, platform->currentText(), QString::fromStdString(target.url));
 
 	auto *key = new QLineEdit(QString::fromStdString(target.key));
 	key->setEchoMode(QLineEdit::Password);
@@ -181,14 +201,12 @@ void MultistreamDock::addRow(const StreamTarget &target)
 	ApplyStatus(status, StreamStatus::Idle);
 	table_->setCellWidget(row, ColStatus, status);
 
-	// Picking a known platform fills its RTMP URL, unless the user typed one.
+	// Switching platform retargets the URL cell: known platforms show the
+	// "Auto (OBS)" hint, custom restores an editable URL field.
 	connect(platform, &QComboBox::currentIndexChanged, this, [this, platform, url](int) {
 		if (updating_)
 			return;
-		const QString presetUrl =
-			QString::fromStdString(PresetUrl(platform->currentText().toStdString()));
-		if (!presetUrl.isEmpty() && IsPresetUrl(url->text().trimmed().toStdString()))
-			url->setText(presetUrl);
+		ApplyUrlMode(url, platform->currentText(), QString());
 		onEdited();
 	});
 	connect(platform->lineEdit(), &QLineEdit::editingFinished, this, &MultistreamDock::onEdited);
@@ -204,14 +222,19 @@ std::vector<StreamTarget> MultistreamDock::collectTargets() const
 		StreamTarget t;
 		auto *platform = qobject_cast<QComboBox *>(table_->cellWidget(row, ColName));
 		t.name = platform->currentText().toStdString();
-		t.url = Edit(table_, row, ColUrl)->text().trimmed().toStdString();
 		t.key = Edit(table_, row, ColKey)->text().toStdString();
 		QCheckBox *active = ActiveBox(table_, row);
 		t.enabled = active && active->isChecked();
 		// A known platform drives OBS's rtmp_common service (regional "auto");
-		// anything else stays custom and streams to the typed URL.
+		// anything else stays custom and streams to the typed URL. The URL cell
+		// only holds a real address in the custom case (otherwise it is the
+		// non-editable "Auto (OBS)" hint, which must not be persisted).
 		t.service = PlatformServiceName(t.name);
-		t.server = t.service.empty() ? std::string() : std::string("auto");
+		if (t.service.empty()) {
+			t.url = Edit(table_, row, ColUrl)->text().trimmed().toStdString();
+		} else {
+			t.server = "auto";
+		}
 		targets.push_back(std::move(t));
 	}
 	return targets;
