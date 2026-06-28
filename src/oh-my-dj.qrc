@@ -6,5 +6,7 @@
     <file>icons/stop.svg</file>
     <file>icons/rotate.svg</file>
     <file>icons/gear.svg</file>
+    <file>icons/eye.svg</file>
+    <file>icons/eye-off.svg</file>
   </qresource>
 </RCC>

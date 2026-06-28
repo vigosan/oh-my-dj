@@ -3,10 +3,12 @@
 #include <obs-frontend-api.h>
 #include <obs-module.h>
 
+#include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -185,6 +187,15 @@ void MultistreamDock::addRow(const StreamTarget &target)
 
 	auto *key = new QLineEdit(QString::fromStdString(target.key));
 	key->setEchoMode(QLineEdit::Password);
+	QAction *reveal = key->addAction(QIcon(":/oh-my-dj/icons/eye.svg"),
+					 QLineEdit::TrailingPosition);
+	reveal->setToolTip(T("OhMyDj.Stream.RevealKey"));
+	connect(reveal, &QAction::triggered, this, [key, reveal]() {
+		const bool hidden = key->echoMode() == QLineEdit::Password;
+		key->setEchoMode(hidden ? QLineEdit::Normal : QLineEdit::Password);
+		reveal->setIcon(QIcon(hidden ? ":/oh-my-dj/icons/eye-off.svg"
+					     : ":/oh-my-dj/icons/eye.svg"));
+	});
 	table_->setCellWidget(row, ColKey, key);
 
 	auto *activeCell = new QWidget();
