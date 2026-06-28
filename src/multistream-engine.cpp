@@ -9,6 +9,7 @@
 #include <string>
 
 #include "stream-health.hpp"
+#include "stream-presets.hpp"
 
 namespace ohmydj {
 
@@ -16,6 +17,15 @@ namespace {
 
 constexpr int kReconnectDelayMs = 5000;
 constexpr int kHealthIntervalMs = 1000;
+
+// A target is ready to go live when it is on and has somewhere to send to: a
+// known platform (OBS resolves its server) or a custom URL.
+bool TargetReady(const StreamTarget &t)
+{
+	if (!t.enabled)
+		return false;
+	return t.service.empty() ? !t.url.empty() : true;
+}
 
 std::string ConfigFilePath()
 {
@@ -119,7 +129,7 @@ void MultistreamEngine::start(bool useMainEncoders)
 
 	bool any = false;
 	for (const StreamTarget &t : d_->targets) {
-		if (t.enabled && !t.url.empty()) {
+		if (TargetReady(t)) {
 			any = true;
 			break;
 		}
@@ -158,15 +168,25 @@ void MultistreamEngine::start(bool useMainEncoders)
 
 	for (int i = 0; i < static_cast<int>(d_->targets.size()); ++i) {
 		const StreamTarget &t = d_->targets[i];
-		if (!t.enabled || t.url.empty())
+		if (!TargetReady(t))
 			continue;
 
 		const std::string id = std::to_string(i);
 
 		obs_data_t *ssettings = obs_data_create();
-		obs_data_set_string(ssettings, "server", t.url.c_str());
 		obs_data_set_string(ssettings, "key", t.key.c_str());
-		obs_service_t *service = obs_service_create("rtmp_custom", ("ohmydj-svc-" + id).c_str(),
+		const char *serviceType;
+		if (t.service.empty()) {
+			// Custom destination: stream straight to the user's URL.
+			obs_data_set_string(ssettings, "server", t.url.c_str());
+			serviceType = "rtmp_custom";
+		} else {
+			// Known platform: let OBS pick the server (regional "auto").
+			obs_data_set_string(ssettings, "service", t.service.c_str());
+			obs_data_set_string(ssettings, "server", t.server.c_str());
+			serviceType = "rtmp_common";
+		}
+		obs_service_t *service = obs_service_create(serviceType, ("ohmydj-svc-" + id).c_str(),
 							    ssettings, nullptr);
 		obs_data_release(ssettings);
 
@@ -285,6 +305,17 @@ StreamConfig LoadStreamConfig()
 			t.url = obs_data_get_string(o, "url");
 			t.key = obs_data_get_string(o, "key");
 			t.enabled = obs_data_get_bool(o, "enabled");
+			if (obs_data_has_user_value(o, "service")) {
+				// New format: stored explicitly.
+				t.service = obs_data_get_string(o, "service");
+				t.server = obs_data_get_string(o, "server");
+			} else {
+				// Legacy format: derive the OBS service from the
+				// label/URL so known platforms gain regional "auto".
+				const MigratedTarget m = MigrateLegacyTarget(t.name, t.url);
+				t.service = m.service;
+				t.server = m.server;
+			}
 			config.targets.push_back(std::move(t));
 			obs_data_release(o);
 		}
@@ -307,6 +338,8 @@ void SaveStreamConfig(const StreamConfig &config)
 	for (const StreamTarget &t : config.targets) {
 		obs_data_t *o = obs_data_create();
 		obs_data_set_string(o, "name", t.name.c_str());
+		obs_data_set_string(o, "service", t.service.c_str());
+		obs_data_set_string(o, "server", t.server.c_str());
 		obs_data_set_string(o, "url", t.url.c_str());
 		obs_data_set_string(o, "key", t.key.c_str());
 		obs_data_set_bool(o, "enabled", t.enabled);

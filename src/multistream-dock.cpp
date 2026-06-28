@@ -208,6 +208,10 @@ std::vector<StreamTarget> MultistreamDock::collectTargets() const
 		t.key = Edit(table_, row, ColKey)->text().toStdString();
 		QCheckBox *active = ActiveBox(table_, row);
 		t.enabled = active && active->isChecked();
+		// A known platform drives OBS's rtmp_common service (regional "auto");
+		// anything else stays custom and streams to the typed URL.
+		t.service = PlatformServiceName(t.name);
+		t.server = t.service.empty() ? std::string() : std::string("auto");
 		targets.push_back(std::move(t));
 	}
 	return targets;
