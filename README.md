@@ -1,7 +1,8 @@
 # Oh My DJ
 
-An OBS plugin that makes life simple for DJs: a single dock to rotate cameras /
-scenes on a timer, and (planned) one-click multistreaming to several platforms.
+An OBS multicam and multistream plugin that makes life simple for DJs: a single
+dock to rotate multiple cameras / scenes on a timer, and multistream to Twitch,
+YouTube and Facebook at once.
 
 It replaces the heavyweight, untranslated setup of *obs-multi-rtmp* +
 *Advanced Scene Switcher* with one focused, friendly panel.
