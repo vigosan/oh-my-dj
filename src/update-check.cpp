@@ -78,7 +78,7 @@ void CheckForUpdate(QObject *context, const QString &currentVersion,
 
 #if !defined(__APPLE__)
 
-#include <util/curl/curl-helper.h>
+#include <curl/curl.h>
 
 namespace detail {
 
