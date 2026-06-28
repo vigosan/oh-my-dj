@@ -76,6 +76,7 @@ export default function Site({ lang }: { lang: Lang }) {
         <Features t={t} />
         <How t={t} />
         <Download t={t} />
+        <Faq t={t} />
       </main>
       <Footer t={t} />
     </div>
@@ -95,6 +96,7 @@ function Header({ t, lang }: { t: T; lang: Lang }) {
         <nav className="hidden items-center gap-8 text-sm text-mute md:flex">
           <a href="#features" className="transition-colors hover:text-ink">{t.nav.features}</a>
           <a href="#how" className="transition-colors hover:text-ink">{t.nav.how}</a>
+          <a href="#faq" className="transition-colors hover:text-ink">{t.nav.faq}</a>
           <a href="#download" className="transition-colors hover:text-ink">{t.nav.download}</a>
           <a href={REPO_URL} className="transition-colors hover:text-ink">{t.nav.github}</a>
         </nav>
@@ -572,6 +574,39 @@ function Download({ t }: { t: T }) {
           })}
         </div>
         <p className="mt-6 max-w-2xl font-mono text-xs leading-relaxed text-mute">{t.download.note}</p>
+      </div>
+    </section>
+  );
+}
+
+function Faq({ t }: { t: T }) {
+  return (
+    <section id="faq" className="border-b border-line">
+      <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
+        <Reveal>
+          <Eyebrow>{t.faqTag}</Eyebrow>
+          <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+            {t.faqTitle}
+          </h2>
+        </Reveal>
+        <div className="mt-12 max-w-3xl divide-y divide-line border-t border-line">
+          {t.faq.map((item, idx) => (
+            <Reveal key={idx} delay={idx * 60}>
+              <details className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium tracking-tight">
+                  {item.q}
+                  <span
+                    aria-hidden
+                    className="font-mono text-mute transition-transform duration-200 group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-4 text-sm leading-relaxed text-mute">{item.a}</p>
+              </details>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );

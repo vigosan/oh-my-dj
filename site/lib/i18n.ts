@@ -79,7 +79,7 @@ type Feature = {
 type Step = { n: string; title: string; body: string };
 
 export type Dict = {
-  nav: { features: string; how: string; download: string; github: string };
+  nav: { features: string; how: string; faq: string; download: string; github: string };
   langLabel: string;
   hero: {
     badge: string;
@@ -113,12 +113,15 @@ export type Dict = {
     note: string;
     downloads: string;
   };
+  faqTag: string;
+  faqTitle: string;
+  faq: { q: string; a: string }[];
   footer: { tagline: string; donate: string; license: string; built: string };
 };
 
 export const dict: Record<Lang, Dict> = {
   en: {
-    nav: { features: "Features", how: "How it works", download: "Download", github: "GitHub" },
+    nav: { features: "Features", how: "How it works", faq: "FAQ", download: "Download", github: "GitHub" },
     langLabel: "ES",
     hero: {
       badge: "OBS Studio plugin",
@@ -194,6 +197,30 @@ export const dict: Record<Lang, Dict> = {
       note: "Links to the latest GitHub Release. Prefer to build it yourself? The source is on GitHub.",
       downloads: "downloads",
     },
+    faqTag: "FAQ",
+    faqTitle: "Questions about the OBS multicam & multistream plugin",
+    faq: [
+      {
+        q: "What is the best OBS multicam plugin for DJs?",
+        a: "Oh My DJ is a free OBS Studio plugin built specifically for DJs. It rotates multiple cameras (scenes) on a timer and multistreams to several platforms at once, from a single dock with two tabs. It's a lighter alternative to combining obs-multi-rtmp with Advanced Scene Switcher.",
+      },
+      {
+        q: "How do I stream to Twitch and YouTube at the same time in OBS?",
+        a: "Install Oh My DJ, open the Streaming tab, pick Twitch and YouTube (their RTMP server URLs fill in automatically), paste each stream key, tick them On and enable Sync with OBS streaming. When you press Start Streaming in OBS, both platforms go live at once, reusing OBS's own encoder — no extra CPU.",
+      },
+      {
+        q: "How do I rotate multiple cameras automatically in OBS?",
+        a: "In the Cameras tab, define a flow of scenes and how long each one shows (seconds, minutes or hours), then tick Automatic rotation. When the program scene matches a step, Oh My DJ advances on schedule and loops — no manual switching, no extra clicks.",
+      },
+      {
+        q: "Is Oh My DJ a good obs-multi-rtmp alternative?",
+        a: "Yes. obs-multi-rtmp handles multistreaming and Advanced Scene Switcher handles scene automation — Oh My DJ does both from one focused, translated panel designed for DJs, with no manual Start/Stop. It follows OBS automatically.",
+      },
+      {
+        q: "Is Oh My DJ free, and what platforms does it support?",
+        a: "It's free and open source (GPL-2.0). It runs on macOS, Windows and Linux, and requires OBS Studio. Download the plugin for your platform, drop it into your OBS plugins folder and restart OBS.",
+      },
+    ],
     footer: {
       tagline: "An OBS plugin that makes life simple for DJs.",
       donate: "Donate ♥",
@@ -202,7 +229,7 @@ export const dict: Record<Lang, Dict> = {
     },
   },
   es: {
-    nav: { features: "Funciones", how: "Cómo funciona", download: "Descarga", github: "GitHub" },
+    nav: { features: "Funciones", how: "Cómo funciona", faq: "FAQ", download: "Descarga", github: "GitHub" },
     langLabel: "EN",
     hero: {
       badge: "Plugin de OBS Studio",
@@ -278,6 +305,30 @@ export const dict: Record<Lang, Dict> = {
       note: "Enlaza a la última release de GitHub. ¿Prefieres compilarlo tú? El código está en GitHub.",
       downloads: "descargas",
     },
+    faqTag: "FAQ",
+    faqTitle: "Preguntas sobre el plugin de OBS multicámara y multistream",
+    faq: [
+      {
+        q: "¿Cuál es el mejor plugin de OBS multicámara para DJs?",
+        a: "Oh My DJ es un plugin gratuito de OBS Studio pensado para DJs. Rota varias cámaras (escenas) con un temporizador y emite a varias plataformas a la vez, desde un único dock con dos pestañas. Es una alternativa más ligera a combinar obs-multi-rtmp con Advanced Scene Switcher.",
+      },
+      {
+        q: "¿Cómo emito a Twitch y YouTube a la vez en OBS?",
+        a: "Instala Oh My DJ, abre la pestaña Streaming, elige Twitch y YouTube (sus URLs de servidor RTMP se rellenan solas), pega cada clave de stream, márcalas como activas y activa Sincronizar con el streaming de OBS. Al pulsar Iniciar transmisión en OBS, ambas plataformas se ponen en directo a la vez, reutilizando el codificador de OBS — sin CPU extra.",
+      },
+      {
+        q: "¿Cómo roto varias cámaras automáticamente en OBS?",
+        a: "En la pestaña Cámaras, define un flujo de escenas y cuánto se muestra cada una (segundos, minutos u horas) y activa Rotación automática. Cuando la escena de programa coincide con un paso, Oh My DJ avanza según el horario y vuelve a empezar — sin cambios manuales ni clics extra.",
+      },
+      {
+        q: "¿Es Oh My DJ una buena alternativa a obs-multi-rtmp?",
+        a: "Sí. obs-multi-rtmp se encarga del multistreaming y Advanced Scene Switcher de la automatización de escenas — Oh My DJ hace ambas cosas desde un único panel, traducido y pensado para DJs, sin Start/Stop manuales. Sigue a OBS automáticamente.",
+      },
+      {
+        q: "¿Es gratis Oh My DJ y qué plataformas soporta?",
+        a: "Es gratuito y de código abierto (GPL-2.0). Funciona en macOS, Windows y Linux, y requiere OBS Studio. Descarga el plugin para tu plataforma, cópialo en tu carpeta de plugins de OBS y reinicia OBS.",
+      },
+    ],
     footer: {
       tagline: "Un plugin de OBS que le hace la vida fácil a los DJs.",
       donate: "Donar ♥",

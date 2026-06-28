@@ -6,6 +6,7 @@ import {
   SITE_URL,
   REPO_URL,
   meta,
+  dict,
   type Lang,
 } from "@/lib/i18n";
 
@@ -67,11 +68,27 @@ function JsonLd({ lang }: { lang: Lang }) {
     codeRepository: REPO_URL,
     license: "https://opensource.org/licenses/MIT",
   };
+  const faq = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    inLanguage: lang,
+    mainEntity: dict[lang].faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faq) }}
+      />
+    </>
   );
 }
 
