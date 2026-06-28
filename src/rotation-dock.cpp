@@ -67,8 +67,11 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	editRow->addWidget(suggestBtn);
 
 	enable_ = new QCheckBox(T("OhMyDj.Rotation.Enable"), this);
-	shuffle_ = new QCheckBox(T("OhMyDj.Rotation.Shuffle"), this);
-	shuffle_->setToolTip(T("OhMyDj.Rotation.ShuffleHint"));
+	auto *orderLabel = new QLabel(T("OhMyDj.Rotation.Order"), this);
+	order_ = new QComboBox(this);
+	order_->addItem(T("OhMyDj.Rotation.Order.InOrder")); // index 0 => sequential
+	order_->addItem(T("OhMyDj.Rotation.Order.Shuffle")); // index 1 => shuffle
+	order_->setToolTip(T("OhMyDj.Rotation.ShuffleHint"));
 	status_ = new QLabel(this);
 	tick_ = new QTimer(this);
 	tick_->setInterval(1000);
@@ -77,7 +80,9 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 
 	auto *statusRow = new QHBoxLayout();
 	statusRow->addWidget(enable_);
-	statusRow->addWidget(shuffle_);
+	statusRow->addSpacing(16);
+	statusRow->addWidget(orderLabel);
+	statusRow->addWidget(order_);
 	statusRow->addStretch();
 	statusRow->addWidget(status_);
 
@@ -92,7 +97,7 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	connect(upBtn, &QPushButton::clicked, this, [this]() { onMove(-1); });
 	connect(downBtn, &QPushButton::clicked, this, [this]() { onMove(1); });
 	connect(enable_, &QCheckBox::toggled, this, &RotationDock::onEnableToggled);
-	connect(shuffle_, &QCheckBox::toggled, this, &RotationDock::onShuffleToggled);
+	connect(order_, &QComboBox::currentIndexChanged, this, &RotationDock::onOrderChanged);
 	connect(&engine_, &RotationEngine::stepChanged, this, &RotationDock::onStepChanged);
 	connect(tick_, &QTimer::timeout, this, &RotationDock::refreshStatus);
 
@@ -101,7 +106,8 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	for (const RotationStep &step : config.steps)
 		addRow(step);
 	enable_->setChecked(config.enabled);
-	shuffle_->setChecked(config.shuffle);
+	order_->setCurrentIndex(config.shuffle ? 1 : 0);
+	order_->setEnabled(config.enabled);
 	updating_ = false;
 
 	engine_.setSteps(collectSteps());
@@ -324,19 +330,22 @@ void RotationDock::onEdited()
 		return;
 	const std::vector<RotationStep> steps = collectSteps();
 	engine_.setSteps(steps);
-	SaveRotationConfig({steps, enable_->isChecked(), shuffle_->isChecked()});
+	SaveRotationConfig({steps, enable_->isChecked(), order_->currentIndex() == 1});
 }
 
 void RotationDock::onEnableToggled(bool enabled)
 {
 	engine_.setEnabled(enabled);
+	// The order only matters while rotation runs, so it follows the master switch.
+	order_->setEnabled(enabled);
 	if (!updating_)
-		SaveRotationConfig({collectSteps(), enabled, shuffle_->isChecked()});
+		SaveRotationConfig({collectSteps(), enabled, order_->currentIndex() == 1});
 	onStepChanged(engine_.currentIndex());
 }
 
-void RotationDock::onShuffleToggled(bool shuffle)
+void RotationDock::onOrderChanged()
 {
+	const bool shuffle = order_->currentIndex() == 1;
 	engine_.setShuffle(shuffle);
 	if (!updating_)
 		SaveRotationConfig({collectSteps(), enable_->isChecked(), shuffle});
@@ -439,7 +448,7 @@ void RotationDock::renameScene(const QString &from, const QString &to)
 
 void RotationDock::persist()
 {
-	SaveRotationConfig({collectSteps(), enable_->isChecked(), shuffle_->isChecked()});
+	SaveRotationConfig({collectSteps(), enable_->isChecked(), order_->currentIndex() == 1});
 }
 
 } // namespace ohmydj
