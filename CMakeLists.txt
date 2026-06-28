@@ -73,12 +73,16 @@ target_sources(
     src/oh-my-dj.qrc
 )
 
-# macOS does the update check over the system's native networking (NSURLSession),
-# because OBS ships no Qt TLS backend and Qt HTTPS requests fail without one.
+# The update check needs HTTPS, but OBS ships no Qt TLS backend, so Qt requests
+# fail without one. macOS uses the system's native networking (NSURLSession);
+# Windows/Linux use the libcurl that OBS already bundles (with its own TLS).
 if(APPLE)
   enable_language(OBJCXX)
   target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/update-check-mac.mm)
   target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE "-framework Foundation")
+else()
+  find_package(CURL REQUIRED)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE CURL::libcurl)
 endif()
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

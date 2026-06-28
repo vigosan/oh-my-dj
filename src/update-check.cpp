@@ -77,13 +77,55 @@ void CheckForUpdate(QObject *context, const QString &currentVersion,
 }
 
 #if !defined(__APPLE__)
+
+#include <util/curl/curl-helper.h>
+
 namespace detail {
-// TODO: Windows/Linux transport (e.g. libcurl). Until then the update check is
-// a no-op off macOS — the dock simply never shows the notice there.
-std::string HttpGet(const std::string &)
+
+namespace {
+size_t AppendBody(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-	return {};
+	const size_t total = size * nmemb;
+	static_cast<std::string *>(userdata)->append(ptr, total);
+	return total;
 }
+} // namespace
+
+// Windows/Linux HTTP GET via the libcurl that OBS ships (with its own TLS), so
+// it works even though OBS bundles no Qt TLS backend. Blocking — call off the
+// GUI thread.
+std::string HttpGet(const std::string &url)
+{
+	CURL *curl = curl_easy_init();
+	if (!curl)
+		return {};
+
+	std::string body;
+	struct curl_slist *headers = nullptr;
+	headers = curl_slist_append(headers, "User-Agent: oh-my-dj");
+	headers = curl_slist_append(headers, "Accept: application/vnd.github+json");
+
+	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 8L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, AppendBody);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
+
+	const CURLcode res = curl_easy_perform(curl);
+	long status = 0;
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+
+	curl_slist_free_all(headers);
+	curl_easy_cleanup(curl);
+
+	if (res != CURLE_OK || status != 200)
+		return {};
+	return body;
+}
+
 } // namespace detail
 #endif
 
