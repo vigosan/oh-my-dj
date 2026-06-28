@@ -7,7 +7,10 @@
 #include <QFormLayout>
 #include <QLabel>
 #include <QListWidget>
+#include <QSet>
 #include <QVBoxLayout>
+
+#include "duration.hpp"
 
 namespace ohmydj {
 
@@ -29,11 +32,7 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	main_->addItems(scenes_);
 
 	others_ = new QListWidget(this);
-	for (const QString &scene : scenes_) {
-		auto *item = new QListWidgetItem(scene, others_);
-		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-		item->setCheckState(Qt::Unchecked);
-	}
+	rebuildOthers();
 
 	pacing_ = new QComboBox(this);
 	pacing_->addItem(T("OhMyDj.Suggest.Pacing.Calm"), static_cast<int>(Pacing::Calm));
@@ -51,9 +50,23 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	form->addRow(T("OhMyDj.Suggest.Pacing"), pacing_);
 	form->addRow(T("OhMyDj.Suggest.Transition"), transition_);
 
+	preview_ = new QLabel(this);
+	preview_->setWordWrap(true);
+	preview_->setTextFormat(Qt::PlainText);
+
 	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 	connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+	// Changing the main scene removes it from the secondary list; any choice
+	// updates the live preview.
+	connect(main_, &QComboBox::currentTextChanged, this, [this]() {
+		rebuildOthers();
+		updatePreview();
+	});
+	connect(others_, &QListWidget::itemChanged, this, [this]() { updatePreview(); });
+	connect(pacing_, &QComboBox::currentIndexChanged, this, [this]() { updatePreview(); });
+	connect(transition_, &QComboBox::currentIndexChanged, this, [this]() { updatePreview(); });
 
 	auto *layout = new QVBoxLayout(this);
 	auto *hint = new QLabel(T("OhMyDj.Suggest.Hint"), this);
@@ -61,7 +74,50 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	hint->setEnabled(false);
 	layout->addWidget(hint);
 	layout->addLayout(form);
+	layout->addWidget(preview_);
 	layout->addWidget(buttons);
+
+	updatePreview();
+}
+
+void SuggestDialog::rebuildOthers()
+{
+	const QString main = main_->currentText();
+
+	// Remember what was already ticked so a main-scene change keeps the rest.
+	QSet<QString> checked;
+	for (int i = 0; i < others_->count(); ++i) {
+		QListWidgetItem *item = others_->item(i);
+		if (item->checkState() == Qt::Checked)
+			checked.insert(item->text());
+	}
+
+	others_->blockSignals(true);
+	others_->clear();
+	for (const QString &scene : scenes_) {
+		if (scene == main) // the main scene is never a cut-away target
+			continue;
+		auto *item = new QListWidgetItem(scene, others_);
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		item->setCheckState(checked.contains(scene) ? Qt::Checked : Qt::Unchecked);
+	}
+	others_->blockSignals(false);
+}
+
+void SuggestDialog::updatePreview()
+{
+	const std::vector<RotationStep> steps = BuildRotationPlan(plan());
+	if (steps.empty()) {
+		preview_->setText(T("OhMyDj.Suggest.PreviewEmpty"));
+		return;
+	}
+
+	QStringList parts;
+	for (const RotationStep &step : steps) {
+		const QString clock = QString::fromStdString(FormatClock(static_cast<int>(step.seconds())));
+		parts << QString::fromStdString(step.scene) + " " + clock;
+	}
+	preview_->setText(T("OhMyDj.Suggest.Preview").arg(parts.join(" → ")));
 }
 
 PlanInput SuggestDialog::plan() const

@@ -8,6 +8,7 @@
 
 class QComboBox;
 class QListWidget;
+class QLabel;
 
 namespace ohmydj {
 
@@ -27,11 +28,19 @@ public:
 	PlanInput plan() const;
 
 private:
+	// Repopulate the secondary-scene list, leaving out whatever scene is the
+	// current main one (you never cut away to the main scene itself), keeping any
+	// existing checks.
+	void rebuildOthers();
+	// Refresh the live preview of the rotation the current choices would build.
+	void updatePreview();
+
 	QStringList scenes_;
 	QComboBox *main_;
 	QListWidget *others_;
 	QComboBox *pacing_;
 	QComboBox *transition_;
+	QLabel *preview_;
 };
 
 } // namespace ohmydj
