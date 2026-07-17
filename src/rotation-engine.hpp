@@ -73,6 +73,7 @@ private:
 	void advance();
 	void arm(int index);
 	void park();
+	int stepDurationMs(int index);
 	bool active() const { return enabled_ && streaming_; }
 
 	std::vector<RotationStep> steps_;

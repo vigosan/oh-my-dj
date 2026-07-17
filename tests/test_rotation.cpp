@@ -62,6 +62,34 @@ static void test_step_seconds()
 	CHECK(step("CAM", 1, DurationUnit::Hours).seconds() == 3600);
 }
 
+static RotationStep rangedStep(int amount, int amountMax, DurationUnit unit)
+{
+	RotationStep s = step("CAM", amount, unit);
+	s.amountMax = amountMax;
+	return s;
+}
+
+static void test_step_random_range()
+{
+	std::printf("a min-max range makes each pass unpredictable but bounded\n");
+	// Fixed duration (max unset or equal): always the same, keeps old behavior.
+	CHECK(RandomizedSeconds(rangedStep(40, 0, DurationUnit::Seconds), 0) == 40);
+	CHECK(RandomizedSeconds(rangedStep(40, 40, DurationUnit::Seconds), 7) == 40);
+
+	// 30-50s: roll walks the inclusive range, so both bounds are reachable.
+	CHECK(RandomizedSeconds(rangedStep(30, 50, DurationUnit::Seconds), 0) == 30);
+	CHECK(RandomizedSeconds(rangedStep(30, 50, DurationUnit::Seconds), 20) == 50);
+	CHECK(RandomizedSeconds(rangedStep(30, 50, DurationUnit::Seconds), 21) == 30); // wraps
+	CHECK(RandomizedSeconds(rangedStep(30, 50, DurationUnit::Seconds), 5) == 35);
+
+	// Range respects the unit: 1-2 minutes => 60..120 seconds.
+	CHECK(RandomizedSeconds(rangedStep(1, 2, DurationUnit::Minutes), 0) == 60);
+	CHECK(RandomizedSeconds(rangedStep(1, 2, DurationUnit::Minutes), 60) == 120);
+
+	// A max below min never shortens the step below its min (bad loaded data).
+	CHECK(RandomizedSeconds(rangedStep(40, 10, DurationUnit::Seconds), 3) == 40);
+}
+
 static void test_resolve_loop()
 {
 	std::printf("rotation loops to the top by default\n");
@@ -184,6 +212,7 @@ int main()
 	test_unit_conversion();
 	test_format_clock();
 	test_step_seconds();
+	test_step_random_range();
 	test_resolve_loop();
 	test_resolve_jump();
 	test_resolve_jump_fallback();

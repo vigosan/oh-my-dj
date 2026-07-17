@@ -2,6 +2,16 @@
 
 namespace ohmydj {
 
+long long RandomizedSeconds(const RotationStep &step, long long roll)
+{
+	const long long min = step.seconds();
+	if (step.amountMax <= step.amount)
+		return min;
+	const long long max = static_cast<long long>(step.amountMax) * UnitToSeconds(step.unit);
+	const long long span = max - min + 1; // inclusive window
+	return min + (roll % span + span) % span;
+}
+
 int ResolveNextIndex(const std::vector<RotationStep> &steps, int fromIndex)
 {
 	const int count = static_cast<int>(steps.size());

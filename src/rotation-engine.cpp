@@ -134,11 +134,18 @@ void RotationEngine::arm(int index)
 	paused_ = false;
 	previous_ = -1;
 	current_ = index;
-	long long ms = steps_[index].seconds() * 1000;
+	timer_.start(stepDurationMs(index));
+	emit stepChanged(index);
+}
+
+// Milliseconds for one pass of the step: a fresh roll per pass, so ranged
+// durations land somewhere new every time the scene comes around.
+int RotationEngine::stepDurationMs(int index)
+{
+	long long ms = RandomizedSeconds(steps_[index], static_cast<long long>(rng_())) * 1000;
 	if (ms < 1000)
 		ms = 1000;
-	timer_.start(static_cast<int>(ms));
-	emit stepChanged(index);
+	return static_cast<int>(ms);
 }
 
 void RotationEngine::park()
@@ -175,10 +182,7 @@ void RotationEngine::advance()
 	ApplyTransitionByName(steps_[next].transition);
 	SetCurrentSceneByName(pendingScene_);
 
-	long long ms = steps_[next].seconds() * 1000;
-	if (ms < 1000)
-		ms = 1000;
-	timer_.start(static_cast<int>(ms));
+	timer_.start(stepDurationMs(next));
 	emit stepChanged(next);
 }
 
@@ -206,18 +210,15 @@ void RotationEngine::setPaused(bool paused)
 			return; // nothing running to hold
 		int ms = timer_.remainingTime();
 		if (ms < 0)
-			ms = static_cast<int>(steps_[current_].seconds() * 1000);
+			ms = stepDurationMs(current_);
 		pausedRemainingMs_ = ms;
 		timer_.stop();
 		paused_ = true;
 	} else {
 		paused_ = false;
 		if (active() && current_ >= 0) {
-			int ms = pausedRemainingMs_ > 0
-					 ? pausedRemainingMs_
-					 : static_cast<int>(steps_[current_].seconds() * 1000);
-			if (ms < 1000)
-				ms = 1000;
+			int ms = pausedRemainingMs_ > 0 ? pausedRemainingMs_
+							: stepDurationMs(current_);
 			timer_.start(ms);
 		}
 		pausedRemainingMs_ = 0;
@@ -249,6 +250,9 @@ RotationConfig LoadRotationConfig()
 			step.amount = static_cast<int>(obs_data_get_int(o, "amount"));
 			if (step.amount < 1)
 				step.amount = 1;
+			step.amountMax = static_cast<int>(obs_data_get_int(o, "amount_max"));
+			if (step.amountMax < step.amount)
+				step.amountMax = 0; // missing key or bad data => fixed duration
 			step.unit = UnitFromInt(static_cast<int>(obs_data_get_int(o, "unit")));
 			step.onExpire = obs_data_get_string(o, "on_expire");
 			step.transition = obs_data_get_string(o, "transition");
@@ -275,6 +279,7 @@ void SaveRotationConfig(const RotationConfig &config)
 		obs_data_t *o = obs_data_create();
 		obs_data_set_string(o, "scene", step.scene.c_str());
 		obs_data_set_int(o, "amount", step.amount);
+		obs_data_set_int(o, "amount_max", step.amountMax);
 		obs_data_set_int(o, "unit", static_cast<int>(step.unit));
 		obs_data_set_string(o, "on_expire", step.onExpire.c_str());
 		obs_data_set_string(o, "transition", step.transition.c_str());

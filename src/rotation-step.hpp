@@ -11,13 +11,21 @@ namespace ohmydj {
 // "show `scene` for `amount` `unit`, then go to `onExpire`".
 struct RotationStep {
 	std::string scene;                       // OBS scene to display
-	int amount = 30;                         // duration amount (>= 1)
+	int amount = 30;                         // duration amount (>= 1); with amountMax set, the range minimum
+	int amountMax = 0;                       // 0 or == amount => fixed duration; > amount => random in [amount, amountMax]
 	DurationUnit unit = DurationUnit::Seconds;
 	std::string onExpire;                    // empty => next step (loop); else jump to step with this scene
 	std::string transition;                  // OBS transition name to use when switching INTO this scene; empty => OBS's current one
 
 	long long seconds() const { return static_cast<long long>(amount) * UnitToSeconds(unit); }
 };
+
+// Duration (in seconds) for one pass of `step`: fixed steps return seconds();
+// ranged steps map `roll` onto the inclusive [min, max] window in seconds, so
+// both bounds are reachable and the result is deterministic for tests. `roll`
+// is a non-negative integer supplied by the caller (the RNG in production).
+// A max at or below the min behaves as fixed. Pure logic, no OBS/Qt/RNG.
+long long RandomizedSeconds(const RotationStep &step, long long roll);
 
 // Index of the step to activate once the step at `fromIndex` expires.
 //   - empty onExpire  => next step, wrapping around (loop)

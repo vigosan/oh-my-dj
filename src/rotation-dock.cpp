@@ -35,6 +35,13 @@ QComboBox *Combo(QTableWidget *table, int row, int col)
 	return qobject_cast<QComboBox *>(table->cellWidget(row, col));
 }
 
+// The Duration cell holds two spinboxes: min and (optional) max. Equal values
+// mean a fixed duration; a larger max makes each pass random within the range.
+QSpinBox *AmountSpin(QTableWidget *table, int row, const char *name)
+{
+	return table->cellWidget(row, ColAmount)->findChild<QSpinBox *>(QLatin1String(name));
+}
+
 } // namespace
 
 RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
@@ -207,10 +214,29 @@ void RotationDock::addRow(const RotationStep &step)
 	fillSceneCombo(scene, QString::fromStdString(step.scene));
 	table_->setCellWidget(row, ColScene, scene);
 
-	auto *amount = new QSpinBox();
-	amount->setRange(1, 9999);
-	amount->setValue(step.amount);
-	table_->setCellWidget(row, ColAmount, amount);
+	auto *amountCell = new QWidget();
+	auto *amountMin = new QSpinBox(amountCell);
+	amountMin->setObjectName("amountMin");
+	amountMin->setRange(1, 9999);
+	amountMin->setValue(step.amount);
+	auto *amountMax = new QSpinBox(amountCell);
+	amountMax->setObjectName("amountMax");
+	amountMax->setRange(1, 9999);
+	amountMax->setValue(step.amountMax > step.amount ? step.amountMax : step.amount);
+	amountMax->setToolTip(T("OhMyDj.Duration.RangeHint"));
+	amountMin->setToolTip(T("OhMyDj.Duration.RangeHint"));
+	auto *amountLayout = new QHBoxLayout(amountCell);
+	amountLayout->setContentsMargins(0, 0, 0, 0);
+	amountLayout->setSpacing(2);
+	amountLayout->addWidget(amountMin);
+	amountLayout->addWidget(new QLabel(QStringLiteral("–"), amountCell));
+	amountLayout->addWidget(amountMax);
+	table_->setCellWidget(row, ColAmount, amountCell);
+
+	// Keep the range coherent while editing: min never exceeds max and back.
+	connect(amountMin, &QSpinBox::valueChanged, amountMax,
+		[amountMax](int v) { amountMax->setMinimum(v); });
+	amountMax->setMinimum(amountMin->value());
 
 	auto *unit = new QComboBox();
 	unit->addItems({T("OhMyDj.Unit.Seconds"), T("OhMyDj.Unit.Minutes"), T("OhMyDj.Unit.Hours")});
@@ -226,7 +252,8 @@ void RotationDock::addRow(const RotationStep &step)
 	table_->setCellWidget(row, ColTransition, transition);
 
 	connect(scene, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
-	connect(amount, &QSpinBox::valueChanged, this, &RotationDock::onEdited);
+	connect(amountMin, &QSpinBox::valueChanged, this, &RotationDock::onEdited);
+	connect(amountMax, &QSpinBox::valueChanged, this, &RotationDock::onEdited);
 	connect(unit, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 	connect(onExpire, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 	connect(transition, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
@@ -238,7 +265,9 @@ std::vector<RotationStep> RotationDock::collectSteps() const
 	for (int row = 0; row < table_->rowCount(); ++row) {
 		RotationStep step;
 		step.scene = Combo(table_, row, ColScene)->currentText().toStdString();
-		step.amount = qobject_cast<QSpinBox *>(table_->cellWidget(row, ColAmount))->value();
+		step.amount = AmountSpin(table_, row, "amountMin")->value();
+		const int max = AmountSpin(table_, row, "amountMax")->value();
+		step.amountMax = max > step.amount ? max : 0;
 		step.unit = UnitFromInt(Combo(table_, row, ColUnit)->currentIndex());
 		QComboBox *onExpire = Combo(table_, row, ColOnExpire);
 		step.onExpire = onExpire->currentIndex() == 0 ? std::string()
