@@ -2,6 +2,7 @@
 
 #include <obs-module.h>
 
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -33,6 +34,9 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	main_->addItems(scenes_);
 
 	others_ = new QListWidget(this);
+	// Only the tick boxes carry meaning here; the row-selection highlight just
+	// makes the multi-select checklist look single-choice, so switch it off.
+	others_->setSelectionMode(QAbstractItemView::NoSelection);
 	rebuildOthers();
 
 	pacing_ = new QComboBox(this);
