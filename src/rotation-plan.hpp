@@ -22,6 +22,7 @@ struct PlanInput {
 	std::vector<std::string> others; // secondary scenes, interleaved one per pass
 	int mainSeconds = 420;           // duration of the main scene per appearance
 	int otherSeconds = 45;           // duration of each secondary scene
+	bool randomDurations = false;    // widen each cut-away into a ±25% min-max window
 	std::string transition;          // applied to every step; empty => OBS default
 };
 

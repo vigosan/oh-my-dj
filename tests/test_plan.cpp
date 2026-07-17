@@ -91,6 +91,37 @@ static void test_edge_cases()
 	CHECK(p2.empty());
 }
 
+static void test_random_durations_spread_secondary_cutaways()
+{
+	std::printf("random pacing turns each cut-away into a min-max window\n");
+	PlanInput in;
+	in.main = "Main";
+	in.others = {"A"};
+	in.mainSeconds = 420;
+	in.otherSeconds = 40;
+	in.randomDurations = true;
+
+	const auto plan = BuildRotationPlan(in);
+	// The main scene keeps its exact duration: the DJ counts on its pacing.
+	CHECK(plan[0].amountMax == 0);
+	CHECK(plan[0].seconds() == 420);
+	// Cut-aways get a ±25% window (40s => 30-50s) so switches feel organic.
+	CHECK(plan[1].amount == 30);
+	CHECK(plan[1].amountMax == 50);
+	CHECK(plan[1].unit == DurationUnit::Seconds);
+}
+
+static void test_fixed_durations_leave_no_range()
+{
+	std::printf("without random pacing every step keeps a single fixed duration\n");
+	PlanInput in;
+	in.main = "Main";
+	in.others = {"A"};
+	const auto plan = BuildRotationPlan(in);
+	CHECK(plan[0].amountMax == 0);
+	CHECK(plan[1].amountMax == 0);
+}
+
 static void test_pacing_presets_ordered()
 {
 	std::printf("calmer pacing holds the main longer and cuts away shorter\n");
@@ -109,6 +140,8 @@ int main()
 	test_loops_with_no_jump_and_carries_transition();
 	test_empty_transition_left_blank();
 	test_edge_cases();
+	test_random_durations_spread_secondary_cutaways();
+	test_fixed_durations_leave_no_range();
 	test_pacing_presets_ordered();
 
 	if (g_failures == 0) {

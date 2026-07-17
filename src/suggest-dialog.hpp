@@ -6,6 +6,7 @@
 
 #include "rotation-plan.hpp"
 
+class QCheckBox;
 class QComboBox;
 class QListWidget;
 class QLabel;
@@ -39,6 +40,7 @@ private:
 	QComboBox *main_;
 	QListWidget *others_;
 	QComboBox *pacing_;
+	QCheckBox *random_;
 	QComboBox *transition_;
 	QLabel *preview_;
 };

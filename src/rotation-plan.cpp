@@ -72,7 +72,18 @@ std::vector<RotationStep> BuildRotationPlan(const PlanInput &in)
 
 	for (const std::string &other : in.others) {
 		plan.push_back(MakeStep(in.main, in.mainSeconds, in.transition));
-		plan.push_back(MakeStep(other, in.otherSeconds, in.transition));
+		RotationStep cutaway = MakeStep(other, in.otherSeconds, in.transition);
+		if (in.randomDurations) {
+			// ±25% around the pacing's cut-away, kept in seconds so the
+			// window survives even when the base would collapse to minutes.
+			int min = in.otherSeconds - in.otherSeconds / 4;
+			if (min < 1)
+				min = 1;
+			cutaway.amount = min;
+			cutaway.amountMax = in.otherSeconds + in.otherSeconds / 4;
+			cutaway.unit = DurationUnit::Seconds;
+		}
+		plan.push_back(std::move(cutaway));
 	}
 	return plan;
 }

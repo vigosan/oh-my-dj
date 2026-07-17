@@ -2,6 +2,7 @@
 
 #include <obs-module.h>
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -40,6 +41,9 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	pacing_->addItem(T("OhMyDj.Suggest.Pacing.Dynamic"), static_cast<int>(Pacing::Dynamic));
 	pacing_->setCurrentIndex(1); // Balanced
 
+	random_ = new QCheckBox(T("OhMyDj.Suggest.Random"), this);
+	random_->setToolTip(T("OhMyDj.Suggest.RandomHint"));
+
 	transition_ = new QComboBox(this);
 	transition_->addItem(T("OhMyDj.Transition.Default")); // empty selection => OBS default
 	transition_->addItems(transitions);
@@ -48,6 +52,7 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	form->addRow(T("OhMyDj.Suggest.Main"), main_);
 	form->addRow(T("OhMyDj.Suggest.Others"), others_);
 	form->addRow(T("OhMyDj.Suggest.Pacing"), pacing_);
+	form->addRow(QString(), random_);
 	form->addRow(T("OhMyDj.Suggest.Transition"), transition_);
 
 	preview_ = new QLabel(this);
@@ -66,6 +71,7 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	});
 	connect(others_, &QListWidget::itemChanged, this, [this]() { updatePreview(); });
 	connect(pacing_, &QComboBox::currentIndexChanged, this, [this]() { updatePreview(); });
+	connect(random_, &QCheckBox::toggled, this, [this]() { updatePreview(); });
 	connect(transition_, &QComboBox::currentIndexChanged, this, [this]() { updatePreview(); });
 
 	auto *layout = new QVBoxLayout(this);
@@ -114,7 +120,11 @@ void SuggestDialog::updatePreview()
 
 	QStringList parts;
 	for (const RotationStep &step : steps) {
-		const QString clock = QString::fromStdString(FormatClock(static_cast<int>(step.seconds())));
+		QString clock = QString::fromStdString(FormatClock(static_cast<int>(step.seconds())));
+		if (step.amountMax > step.amount) {
+			const int maxSecs = step.amountMax * UnitToSeconds(step.unit);
+			clock += "–" + QString::fromStdString(FormatClock(maxSecs));
+		}
 		parts << QString::fromStdString(step.scene) + " " + clock;
 	}
 	preview_->setText(T("OhMyDj.Suggest.Preview").arg(parts.join(" → ")));
@@ -138,6 +148,7 @@ PlanInput SuggestDialog::plan() const
 	const auto pacing = static_cast<Pacing>(pacing_->currentData().toInt());
 	in.mainSeconds = MainSecondsFor(pacing);
 	in.otherSeconds = OtherSecondsFor(pacing);
+	in.randomDurations = random_->isChecked();
 
 	// First entry is the "Default (OBS)" placeholder => leave transition empty.
 	in.transition = transition_->currentIndex() == 0 ? std::string()
