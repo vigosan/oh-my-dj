@@ -3,13 +3,14 @@
 #include <QDialog>
 
 #include <QStringList>
+#include <QVector>
 
 #include "rotation-plan.hpp"
 
 class QCheckBox;
 class QComboBox;
-class QListWidget;
 class QLabel;
+class QWidget;
 
 namespace ohmydj {
 
@@ -38,7 +39,8 @@ private:
 
 	QStringList scenes_;
 	QComboBox *main_;
-	QListWidget *others_;
+	QWidget *others_;
+	QVector<QCheckBox *> otherBoxes_;
 	QComboBox *pacing_;
 	QCheckBox *random_;
 	QComboBox *transition_;

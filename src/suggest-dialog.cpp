@@ -2,15 +2,14 @@
 
 #include <obs-module.h>
 
-#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
-#include <QListWidget>
 #include <QSet>
 #include <QVBoxLayout>
+#include <QWidget>
 
 #include "duration.hpp"
 
@@ -33,10 +32,11 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 	main_ = new QComboBox(this);
 	main_->addItems(scenes_);
 
-	others_ = new QListWidget(this);
-	// Only the tick boxes carry meaning here; the row-selection highlight just
-	// makes the multi-select checklist look single-choice, so switch it off.
-	others_->setSelectionMode(QAbstractItemView::NoSelection);
+	// A column of real QCheckBox widgets, one per secondary scene. Item-checkable
+	// QListWidget rows render their tick box unreliably under the OBS theme, so we
+	// lay out actual checkboxes the way the rest of the plugin does.
+	others_ = new QWidget(this);
+	new QVBoxLayout(others_);
 	rebuildOthers();
 
 	pacing_ = new QComboBox(this);
@@ -73,7 +73,6 @@ SuggestDialog::SuggestDialog(const QStringList &scenes, const QStringList &trans
 		rebuildOthers();
 		updatePreview();
 	});
-	connect(others_, &QListWidget::itemChanged, this, [this]() { updatePreview(); });
 	connect(pacing_, &QComboBox::currentIndexChanged, this, [this]() { updatePreview(); });
 	connect(random_, &QCheckBox::toggled, this, [this]() { updatePreview(); });
 	connect(transition_, &QComboBox::currentIndexChanged, this, [this]() { updatePreview(); });
@@ -96,22 +95,24 @@ void SuggestDialog::rebuildOthers()
 
 	// Remember what was already ticked so a main-scene change keeps the rest.
 	QSet<QString> checked;
-	for (int i = 0; i < others_->count(); ++i) {
-		QListWidgetItem *item = others_->item(i);
-		if (item->checkState() == Qt::Checked)
-			checked.insert(item->text());
-	}
+	for (QCheckBox *box : otherBoxes_)
+		if (box->isChecked())
+			checked.insert(box->text());
 
-	others_->blockSignals(true);
-	others_->clear();
+	auto *layout = static_cast<QVBoxLayout *>(others_->layout());
+	for (QCheckBox *box : otherBoxes_)
+		delete box;
+	otherBoxes_.clear();
+
 	for (const QString &scene : scenes_) {
 		if (scene == main) // the main scene is never a cut-away target
 			continue;
-		auto *item = new QListWidgetItem(scene, others_);
-		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-		item->setCheckState(checked.contains(scene) ? Qt::Checked : Qt::Unchecked);
+		auto *box = new QCheckBox(scene, others_);
+		box->setChecked(checked.contains(scene));
+		connect(box, &QCheckBox::toggled, this, [this]() { updatePreview(); });
+		layout->addWidget(box);
+		otherBoxes_.push_back(box);
 	}
-	others_->blockSignals(false);
 }
 
 void SuggestDialog::updatePreview()
@@ -139,11 +140,10 @@ PlanInput SuggestDialog::plan() const
 	PlanInput in;
 	in.main = main_->currentText().toStdString();
 
-	for (int i = 0; i < others_->count(); ++i) {
-		QListWidgetItem *item = others_->item(i);
-		if (item->checkState() != Qt::Checked)
+	for (QCheckBox *box : otherBoxes_) {
+		if (!box->isChecked())
 			continue;
-		const std::string scene = item->text().toStdString();
+		const std::string scene = box->text().toStdString();
 		if (scene == in.main) // never cut away to the main scene itself
 			continue;
 		in.others.push_back(scene);
