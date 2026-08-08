@@ -43,20 +43,29 @@ int ResolveNextIndex(const std::vector<RotationStep> &steps, int fromIndex)
 	return -1; // nothing enabled
 }
 
-int ResolveShuffleIndex(int count, int current, int previous, int roll)
+int ResolveShuffleIndex(const std::vector<RotationStep> &steps, int current, int previous, int roll)
 {
-	if (count <= 0)
+	const int count = static_cast<int>(steps.size());
+
+	std::vector<int> enabled;
+	enabled.reserve(count);
+	for (int i = 0; i < count; ++i) {
+		if (steps[i].enabled)
+			enabled.push_back(i);
+	}
+
+	if (enabled.empty())
 		return -1;
-	if (count == 1)
-		return 0;
+	if (enabled.size() == 1)
+		return enabled.front();
 
 	// Exclude the current step; exclude the previous one too, but only while
-	// that still leaves something to pick (i.e. once there are >= 3 steps).
-	const bool excludePrevious = count >= 3;
+	// that still leaves something to pick (i.e. once there are >= 3 enabled).
+	const bool excludePrevious = enabled.size() >= 3;
 
 	std::vector<int> candidates;
-	candidates.reserve(count);
-	for (int i = 0; i < count; ++i) {
+	candidates.reserve(enabled.size());
+	for (int i : enabled) {
 		if (i == current)
 			continue;
 		if (excludePrevious && i == previous)
@@ -67,9 +76,8 @@ int ResolveShuffleIndex(int count, int current, int previous, int roll)
 	if (candidates.empty())
 		return current; // degenerate guard; should not happen given the rules above
 
-	const int r = ((roll % static_cast<int>(candidates.size())) + static_cast<int>(candidates.size())) %
-		      static_cast<int>(candidates.size());
-	return candidates[r];
+	const int size = static_cast<int>(candidates.size());
+	return candidates[((roll % size) + size) % size];
 }
 
 } // namespace ohmydj

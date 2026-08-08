@@ -166,7 +166,7 @@ void RotationEngine::advance()
 	int next;
 	if (shuffle_) {
 		const int roll = count > 0 ? static_cast<int>(rng_() % static_cast<unsigned>(count)) : 0;
-		next = ResolveShuffleIndex(count, current_, previous_, roll);
+		next = ResolveShuffleIndex(steps_, current_, previous_, roll);
 	} else {
 		next = ResolveNextIndex(steps_, current_);
 	}

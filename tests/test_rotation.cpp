@@ -205,42 +205,87 @@ static void test_resolve_single_enabled_holds()
 	CHECK(ResolveNextIndex(flow, 1) == 1);
 }
 
+static std::vector<RotationStep> flowOf(int count)
+{
+	std::vector<RotationStep> flow;
+	for (int i = 0; i < count; ++i)
+		flow.push_back(step("CAM", 5, DurationUnit::Seconds));
+	return flow;
+}
+
 static void test_shuffle_skips_current()
 {
 	std::printf("shuffle never picks the current step\n");
 	// 2 steps: from either one, the only valid pick is the other.
-	CHECK(ResolveShuffleIndex(2, 0, -1, 0) == 1);
-	CHECK(ResolveShuffleIndex(2, 1, -1, 0) == 0);
+	CHECK(ResolveShuffleIndex(flowOf(2), 0, -1, 0) == 1);
+	CHECK(ResolveShuffleIndex(flowOf(2), 1, -1, 0) == 0);
 }
 
 static void test_shuffle_skips_previous_when_three_or_more()
 {
 	std::printf("shuffle avoids the immediately previous step once there are >=3\n");
 	// 3 steps, current=1, previous=0 => only candidate left is 2, for any roll.
-	CHECK(ResolveShuffleIndex(3, 1, 0, 0) == 2);
-	CHECK(ResolveShuffleIndex(3, 1, 0, 5) == 2); // roll is taken modulo the candidate count
+	CHECK(ResolveShuffleIndex(flowOf(3), 1, 0, 0) == 2);
+	CHECK(ResolveShuffleIndex(flowOf(3), 1, 0, 5) == 2); // roll is taken modulo the candidates
 }
 
 static void test_shuffle_roll_walks_candidates()
 {
 	std::printf("shuffle maps roll onto the surviving candidates in order\n");
 	// 4 steps, current=0, previous=-1 => candidates are {1,2,3}.
-	CHECK(ResolveShuffleIndex(4, 0, -1, 0) == 1);
-	CHECK(ResolveShuffleIndex(4, 0, -1, 1) == 2);
-	CHECK(ResolveShuffleIndex(4, 0, -1, 2) == 3);
-	CHECK(ResolveShuffleIndex(4, 0, -1, 3) == 1); // wraps around the candidate list
+	CHECK(ResolveShuffleIndex(flowOf(4), 0, -1, 0) == 1);
+	CHECK(ResolveShuffleIndex(flowOf(4), 0, -1, 1) == 2);
+	CHECK(ResolveShuffleIndex(flowOf(4), 0, -1, 2) == 3);
+	CHECK(ResolveShuffleIndex(flowOf(4), 0, -1, 3) == 1); // wraps around the candidate list
 }
 
 static void test_shuffle_edge_cases()
 {
 	std::printf("shuffle edge cases\n");
-	CHECK(ResolveShuffleIndex(0, -1, -1, 0) == -1); // nothing to play
-	CHECK(ResolveShuffleIndex(1, 0, -1, 0) == 0);   // single scene loops onto itself
+	CHECK(ResolveShuffleIndex(flowOf(0), -1, -1, 0) == -1); // nothing to play
+	CHECK(ResolveShuffleIndex(flowOf(1), 0, -1, 0) == 0);   // single scene loops onto itself
 	// 2 steps: previous must NOT be excluded (it would leave zero candidates).
-	CHECK(ResolveShuffleIndex(2, 0, 1, 0) == 1);
+	CHECK(ResolveShuffleIndex(flowOf(2), 0, 1, 0) == 1);
 	// First pick of a session (current=-1): any step is fair game; roll selects.
-	CHECK(ResolveShuffleIndex(3, -1, -1, 0) == 0);
-	CHECK(ResolveShuffleIndex(3, -1, -1, 2) == 2);
+	CHECK(ResolveShuffleIndex(flowOf(3), -1, -1, 0) == 0);
+	CHECK(ResolveShuffleIndex(flowOf(3), -1, -1, 2) == 2);
+}
+
+static void test_shuffle_skips_disabled()
+{
+	std::printf("shuffle never lands on a disabled step\n");
+	// CAM2 is off: from CAM1 the only candidates are CAM3 and CAM4.
+	std::vector<RotationStep> flow = {
+		step("CAM1", 5, DurationUnit::Seconds),
+		disabledStep("CAM2", 5, DurationUnit::Seconds),
+		step("CAM3", 5, DurationUnit::Seconds),
+		step("CAM4", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveShuffleIndex(flow, 0, -1, 0) == 2);
+	CHECK(ResolveShuffleIndex(flow, 0, -1, 1) == 3);
+	CHECK(ResolveShuffleIndex(flow, 0, -1, 2) == 2); // wraps over 2 candidates, never 1
+
+	// "Avoid previous" is measured against enabled steps only: with 3 enabled
+	// the previous one is excluded, leaving exactly one candidate.
+	CHECK(ResolveShuffleIndex(flow, 2, 0, 0) == 3);
+}
+
+static void test_shuffle_disabled_edge_cases()
+{
+	std::printf("shuffle with too few enabled steps\n");
+	std::vector<RotationStep> allOff = {
+		disabledStep("CAM1", 5, DurationUnit::Seconds),
+		disabledStep("CAM2", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveShuffleIndex(allOff, 0, -1, 0) == -1); // nothing enabled => park
+
+	std::vector<RotationStep> oneOn = {
+		disabledStep("CAM1", 5, DurationUnit::Seconds),
+		step("CAM2", 5, DurationUnit::Seconds),
+		disabledStep("CAM3", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveShuffleIndex(oneOn, 1, -1, 0) == 1); // lone enabled step holds
+	CHECK(ResolveShuffleIndex(oneOn, -1, -1, 0) == 1); // first pick finds it
 }
 
 static void test_resolve_repeated_scene_cycle()
@@ -278,6 +323,8 @@ int main()
 	test_shuffle_skips_previous_when_three_or_more();
 	test_shuffle_roll_walks_candidates();
 	test_shuffle_edge_cases();
+	test_shuffle_skips_disabled();
+	test_shuffle_disabled_edge_cases();
 	test_resolve_repeated_scene_cycle();
 
 	if (g_failures == 0) {
