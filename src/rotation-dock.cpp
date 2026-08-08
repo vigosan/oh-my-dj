@@ -442,7 +442,7 @@ void RotationDock::refreshStatus()
 			const QString scene = Combo(table_, index, ColScene)->currentText();
 			const int secs = engine_.remainingSeconds();
 			const int next = engine_.nextIndex();
-			if (secs < 0 || next < 0 || next >= table_->rowCount()) {
+			if (secs < 0 || next < 0 || next >= table_->rowCount() || next == index) {
 				text = T("OhMyDj.Rotation.Active").arg(scene);
 			} else {
 				const QString clock = QString::fromStdString(FormatClock(secs));
