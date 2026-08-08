@@ -17,18 +17,30 @@ int ResolveNextIndex(const std::vector<RotationStep> &steps, int fromIndex)
 	const int count = static_cast<int>(steps.size());
 	if (count == 0)
 		return -1;
-	if (fromIndex < 0 || fromIndex >= count)
-		return 0;
 
-	const std::string &target = steps[fromIndex].onExpire;
-	if (!target.empty()) {
-		for (int i = 0; i < count; ++i) {
-			if (steps[i].scene == target)
-				return i;
+	const bool validFrom = fromIndex >= 0 && fromIndex < count;
+
+	if (validFrom) {
+		const std::string &target = steps[fromIndex].onExpire;
+		if (!target.empty()) {
+			for (int i = 0; i < count; ++i) {
+				if (steps[i].enabled && steps[i].scene == target)
+					return i;
+			}
+			// Target is disabled or no longer in the flow: fall through to next.
 		}
-		// Target scene is no longer part of the flow: fall through to next.
 	}
-	return (fromIndex + 1) % count; // wrap => loop
+
+	// Walk forward from the current position, wrapping, until an enabled step
+	// turns up. Starting at 1 keeps a lone enabled step resolving onto itself
+	// only after every other candidate has been rejected.
+	const int from = validFrom ? fromIndex : count - 1;
+	for (int hop = 1; hop <= count; ++hop) {
+		const int candidate = (from + hop) % count;
+		if (steps[candidate].enabled)
+			return candidate;
+	}
+	return -1; // nothing enabled
 }
 
 int ResolveShuffleIndex(int count, int current, int previous, int roll)

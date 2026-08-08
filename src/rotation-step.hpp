@@ -16,6 +16,7 @@ struct RotationStep {
 	DurationUnit unit = DurationUnit::Seconds;
 	std::string onExpire;                    // empty => next step (loop); else jump to step with this scene
 	std::string transition;                  // OBS transition name to use when switching INTO this scene; empty => OBS's current one
+	bool enabled = true;                     // false => the engine skips this step entirely
 
 	long long seconds() const { return static_cast<long long>(amount) * UnitToSeconds(unit); }
 };

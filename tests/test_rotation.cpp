@@ -152,6 +152,59 @@ static void test_resolve_duplicate_target()
 	CHECK(ResolveNextIndex(flow, 0) == 1);
 }
 
+static RotationStep disabledStep(const char *scene, int amount, DurationUnit unit,
+				 const char *onExpire = "")
+{
+	RotationStep s = step(scene, amount, unit, onExpire);
+	s.enabled = false;
+	return s;
+}
+
+static void test_resolve_skips_disabled()
+{
+	std::printf("a disabled step is passed over as if it were not there\n");
+	std::vector<RotationStep> flow = {
+		step("CAM1", 5, DurationUnit::Seconds),
+		disabledStep("CAM2", 5, DurationUnit::Seconds),
+		step("CAM3", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveNextIndex(flow, 0) == 2); // CAM2 is off, so CAM1 leads to CAM3
+	CHECK(ResolveNextIndex(flow, 2) == 0); // wrap still lands on an enabled step
+
+	// Consecutive disabled steps are all skipped in one hop.
+	std::vector<RotationStep> gap = {
+		step("CAM1", 5, DurationUnit::Seconds),
+		disabledStep("CAM2", 5, DurationUnit::Seconds),
+		disabledStep("CAM3", 5, DurationUnit::Seconds),
+		step("CAM4", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveNextIndex(gap, 0) == 3);
+}
+
+static void test_resolve_all_disabled()
+{
+	std::printf("with every step disabled there is nothing to advance to\n");
+	std::vector<RotationStep> flow = {
+		disabledStep("CAM1", 5, DurationUnit::Seconds),
+		disabledStep("CAM2", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveNextIndex(flow, 0) == -1); // engine parks
+	CHECK(ResolveNextIndex(flow, -1) == -1);
+}
+
+static void test_resolve_single_enabled_holds()
+{
+	std::printf("one enabled step holds the flow on that scene\n");
+	// The "tonight I only want one camera" case: the timer expiring resolves
+	// back to the same step, so the scene never changes.
+	std::vector<RotationStep> flow = {
+		disabledStep("CAM1", 5, DurationUnit::Seconds),
+		step("CAM2", 5, DurationUnit::Seconds),
+		disabledStep("CAM3", 5, DurationUnit::Seconds),
+	};
+	CHECK(ResolveNextIndex(flow, 1) == 1);
+}
+
 static void test_shuffle_skips_current()
 {
 	std::printf("shuffle never picks the current step\n");
@@ -218,6 +271,9 @@ int main()
 	test_resolve_jump_fallback();
 	test_resolve_edge_cases();
 	test_resolve_duplicate_target();
+	test_resolve_skips_disabled();
+	test_resolve_all_disabled();
+	test_resolve_single_enabled_holds();
 	test_shuffle_skips_current();
 	test_shuffle_skips_previous_when_three_or_more();
 	test_shuffle_roll_walks_candidates();
