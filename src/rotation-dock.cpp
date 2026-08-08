@@ -6,6 +6,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QGraphicsOpacityEffect>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -23,7 +24,7 @@ namespace ohmydj {
 
 namespace {
 
-enum Column { ColScene = 0, ColAmount, ColUnit, ColOnExpire, ColTransition, ColCount };
+enum Column { ColEnabled = 0, ColScene, ColAmount, ColUnit, ColOnExpire, ColTransition, ColCount };
 
 QString T(const char *key)
 {
@@ -52,8 +53,8 @@ RotationDock::RotationDock(QWidget *parent) : QWidget(parent)
 	table_ = new QTableWidget(this);
 	table_->setColumnCount(ColCount);
 	table_->setHorizontalHeaderLabels(
-		{T("OhMyDj.Col.Scene"), T("OhMyDj.Col.Duration"), T("OhMyDj.Col.Unit"),
-		 T("OhMyDj.Col.OnExpire"), T("OhMyDj.Col.Transition")});
+		{T("OhMyDj.Col.Enabled"), T("OhMyDj.Col.Scene"), T("OhMyDj.Col.Duration"),
+		 T("OhMyDj.Col.Unit"), T("OhMyDj.Col.OnExpire"), T("OhMyDj.Col.Transition")});
 	table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 	table_->verticalHeader()->setVisible(false);
 	table_->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -210,6 +211,17 @@ void RotationDock::addRow(const RotationStep &step)
 	const int row = table_->rowCount();
 	table_->insertRow(row);
 
+	auto *enabledCell = new QWidget();
+	auto *enabled = new QCheckBox(enabledCell);
+	enabled->setObjectName("enabled");
+	enabled->setChecked(step.enabled);
+	enabled->setToolTip(T("OhMyDj.Enabled.Hint"));
+	auto *enabledLayout = new QHBoxLayout(enabledCell);
+	enabledLayout->setContentsMargins(0, 0, 0, 0);
+	enabledLayout->setAlignment(Qt::AlignCenter);
+	enabledLayout->addWidget(enabled);
+	table_->setCellWidget(row, ColEnabled, enabledCell);
+
 	auto *scene = new QComboBox();
 	fillSceneCombo(scene, QString::fromStdString(step.scene));
 	table_->setCellWidget(row, ColScene, scene);
@@ -257,6 +269,24 @@ void RotationDock::addRow(const RotationStep &step)
 	connect(unit, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 	connect(onExpire, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
 	connect(transition, &QComboBox::currentIndexChanged, this, &RotationDock::onEdited);
+
+	auto applyEnabledLook = [enabledCell, scene, amountCell, unit, onExpire, transition](bool on) {
+		const double opacity = on ? 1.0 : 0.45;
+		for (QWidget *w : {static_cast<QWidget *>(scene), amountCell,
+				   static_cast<QWidget *>(unit), static_cast<QWidget *>(onExpire),
+				   static_cast<QWidget *>(transition)}) {
+			auto *effect = qobject_cast<QGraphicsOpacityEffect *>(w->graphicsEffect());
+			if (!effect) {
+				effect = new QGraphicsOpacityEffect(w);
+				w->setGraphicsEffect(effect);
+			}
+			effect->setOpacity(opacity);
+		}
+		Q_UNUSED(enabledCell);
+	};
+	applyEnabledLook(enabled->isChecked());
+	connect(enabled, &QCheckBox::toggled, this, [applyEnabledLook](bool on) { applyEnabledLook(on); });
+	connect(enabled, &QCheckBox::toggled, this, &RotationDock::onEdited);
 }
 
 std::vector<RotationStep> RotationDock::collectSteps() const
@@ -275,6 +305,9 @@ std::vector<RotationStep> RotationDock::collectSteps() const
 		QComboBox *transition = Combo(table_, row, ColTransition);
 		step.transition = transition->currentIndex() == 0 ? std::string()
 								  : transition->currentText().toStdString();
+		auto *enabledBox = table_->cellWidget(row, ColEnabled)->findChild<QCheckBox *>(
+			QLatin1String("enabled"));
+		step.enabled = enabledBox && enabledBox->isChecked();
 		steps.push_back(std::move(step));
 	}
 	return steps;
