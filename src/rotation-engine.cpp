@@ -60,10 +60,13 @@ std::string ConfigFilePath()
 	return path;
 }
 
+// Index of the enabled step showing `scene`. Disabled steps are invisible here,
+// so switching to one by hand parks the rotation exactly as an unconfigured
+// scene would.
 int IndexOfScene(const std::vector<RotationStep> &steps, const std::string &scene)
 {
 	for (int i = 0; i < static_cast<int>(steps.size()); ++i) {
-		if (steps[i].scene == scene)
+		if (steps[i].enabled && steps[i].scene == scene)
 			return i;
 	}
 	return -1;
@@ -245,6 +248,7 @@ RotationConfig LoadRotationConfig()
 		const size_t n = obs_data_array_count(arr);
 		for (size_t i = 0; i < n; ++i) {
 			obs_data_t *o = obs_data_array_item(arr, i);
+			obs_data_set_default_bool(o, "enabled", true);
 			RotationStep step;
 			step.scene = obs_data_get_string(o, "scene");
 			step.amount = static_cast<int>(obs_data_get_int(o, "amount"));
@@ -256,6 +260,7 @@ RotationConfig LoadRotationConfig()
 			step.unit = UnitFromInt(static_cast<int>(obs_data_get_int(o, "unit")));
 			step.onExpire = obs_data_get_string(o, "on_expire");
 			step.transition = obs_data_get_string(o, "transition");
+			step.enabled = obs_data_get_bool(o, "enabled");
 			config.steps.push_back(std::move(step));
 			obs_data_release(o);
 		}
@@ -283,6 +288,7 @@ void SaveRotationConfig(const RotationConfig &config)
 		obs_data_set_int(o, "unit", static_cast<int>(step.unit));
 		obs_data_set_string(o, "on_expire", step.onExpire.c_str());
 		obs_data_set_string(o, "transition", step.transition.c_str());
+		obs_data_set_bool(o, "enabled", step.enabled);
 		obs_data_array_push_back(arr, o);
 		obs_data_release(o);
 	}
