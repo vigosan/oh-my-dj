@@ -113,7 +113,6 @@ function LiveDot({ className = "" }: { className?: string }) {
 function Hero({ t, lang, stats }: { t: T; lang: Lang; stats: Stats | null }) {
   return (
     <section id="top" className="relative isolate flex flex-col items-center gap-6 text-center lg:pt-4">
-      <div className="grid-bg pointer-events-none absolute -top-28 bottom-0 left-1/2 -z-10 w-screen -translate-x-1/2" aria-hidden />
       <Reveal as="span" className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-1.5 text-[0.8125rem] text-gray-500 dark:border-gray-800 dark:text-gray-400">
         <LiveDot />
         {t.hero.badge}

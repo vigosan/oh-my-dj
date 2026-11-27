@@ -6,6 +6,10 @@ import { dict, LANGS, RELEASES_URL, REPO_URL } from "@/lib/i18n";
 describe.each(LANGS)("site in %s", (lang) => {
   const html = renderToStaticMarkup(<Site lang={lang} stats={null} />);
 
+  it("keeps the hero on a plain background like its sibling sites, so nothing competes with the headline", () => {
+    expect(html).not.toContain("grid-bg");
+  });
+
   it("keeps the in-page navigation so visitors can jump straight to what they came for", () => {
     for (const id of ["features", "how", "faq", "download"]) {
       expect(html).toContain(`href="#${id}"`);
