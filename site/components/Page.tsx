@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { dict, type Lang, RELEASES_URL, REPO_URL } from "@/lib/i18n";
+import { LangSwitch } from "./LangSwitch";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -40,14 +41,14 @@ export function Page({ lang, current, children }: { lang: Lang; current: "home" 
             <a href={REPO_URL} className={quiet}>{t.nav.github}</a>
           </nav>
           <ThemeToggle labels={t.theme} />
-          <a
+          <LangSwitch
+            lang={other}
             href={`/${other}`}
-            hrefLang={other}
-            aria-label={lang === "en" ? "Cambiar a español" : "Switch to English"}
+            label={lang === "en" ? "Cambiar a español" : "Switch to English"}
             className={quiet}
           >
             {t.langLabel}
-          </a>
+          </LangSwitch>
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-20 lg:gap-28">{children}</main>
