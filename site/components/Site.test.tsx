@@ -28,6 +28,18 @@ describe.each(LANGS)("site in %s", (lang) => {
     expect(html).not.toContain('data-shown="false"');
   });
 
+  it("gives every link the shared link style so they all respond the same to hover, press and keyboard focus", () => {
+    const anchors = html.match(/<a [^>]*>/g)!;
+
+    for (const anchor of anchors) {
+      expect(anchor).toMatch(/class="[^"]*\blink\b/);
+    }
+  });
+
+  it("takes its typeface from the theme instead of an inline style, so every system renders the same monospace", () => {
+    expect(html).not.toContain("font-family");
+  });
+
   it("links to the source code for people who want to build it themselves", () => {
     expect(html).toContain(`href="${REPO_URL}"`);
   });
