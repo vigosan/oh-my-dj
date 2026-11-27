@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import "../globals.css";
 import { LANGS, SITE_URL, type Lang } from "@/lib/i18n";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -25,7 +27,7 @@ export default async function LangLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>{children}</body>
     </html>
   );
 }

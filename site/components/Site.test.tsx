@@ -38,3 +38,40 @@ describe.each(LANGS)("theme in %s", (lang) => {
     expect(header).toContain(`aria-label="${dict[lang].theme.system}"`);
   });
 });
+
+describe.each(LANGS)("family layout in %s", (lang) => {
+  const t = dict[lang];
+  const html = renderToStaticMarkup(<Site lang={lang} />);
+  const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+  const footer = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
+
+  it("opens the header with the logo and the name linking home, like every sibling product site", () => {
+    expect(header).toMatch(new RegExp(`<a[^>]*data-testid="home-link"[^>]*href="/${lang}"[^>]*><svg[^>]*>.*</svg><span[^>]*>Oh My DJ</span></a>`));
+  });
+
+  it("leads the hero with the headline, then the intro, then the download, then the live dock, so the promise is read before the demo", () => {
+    const order = [t.hero.title, t.hero.subtitle, 'data-testid="download"', 'data-testid="dock"'].map((s) => html.indexOf(s));
+    expect(order.every((i) => i > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("sends the hero download to the download section, which is also where the plugin's update notice lands", () => {
+    expect(html).toMatch(/data-testid="download"[^>]*href="#download"|href="#download"[^>]*data-testid="download"/);
+  });
+
+  it("keeps both dock tabs clickable, so visitors can see the cameras and the streaming side of the plugin", () => {
+    expect(html).toMatch(/<button[^>]*data-testid="dock-tab-cameras"/);
+    expect(html).toMatch(/<button[^>]*data-testid="dock-tab-streaming"/);
+  });
+
+  it("keeps every FAQ answer one tap away, since they double as the page's search snippets", () => {
+    expect(html.match(/<details/g)).toHaveLength(t.faq.length);
+  });
+
+  it("credits the author in the footer with a link back to vicent.io, like the other product sites", () => {
+    expect(footer).toContain(t.footer.by);
+    expect(footer).toContain('href="https://vicent.io"');
+    expect(footer).toContain(`href="${REPO_URL}"`);
+    expect(footer).toContain(`href="${RELEASES_URL}"`);
+  });
+});

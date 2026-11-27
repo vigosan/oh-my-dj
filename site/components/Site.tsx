@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { dict, type Lang, REPO_URL, RELEASES_URL } from "@/lib/i18n";
-import { ThemeToggle } from "./ThemeToggle";
+import { button, link, Page } from "./Page";
 
-const otherLang = (l: Lang): Lang => (l === "en" ? "es" : "en");
+const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
 
 function Reveal({
   children,
@@ -69,104 +69,79 @@ export default function Site({ lang }: { lang: Lang }) {
   const t = dict[lang];
 
   return (
-    <div className="min-h-screen">
-      <Header t={t} lang={lang} />
-      <main>
-        <Hero t={t} />
-        <Pitch t={t} />
-        <Features t={t} />
-        <How t={t} />
-        <Download t={t} />
-        <Faq t={t} />
-      </main>
-      <Footer t={t} />
-    </div>
+    <Page lang={lang} current="home">
+      <div aria-hidden className="scroll-playhead">
+        <div className="scroll-playhead-head" />
+      </div>
+      <Hero t={t} />
+      <Pitch t={t} />
+      <Features t={t} />
+      <How t={t} />
+      <Download t={t} />
+      <Faq t={t} />
+    </Page>
   );
 }
 
 type T = (typeof dict)["en"];
 
-function Header({ t, lang }: { t: T; lang: Lang }) {
+function ArrowDown() {
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-paper/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <a href="#top" className="group flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight">
-          <Logo className="h-7 w-7 transition-transform duration-500 group-hover:rotate-180" />
-          Oh My DJ
-        </a>
-        <nav className="hidden items-center gap-8 text-sm text-mute md:flex">
-          <a href="#features" className="transition-colors hover:text-ink">{t.nav.features}</a>
-          <a href="#how" className="transition-colors hover:text-ink">{t.nav.how}</a>
-          <a href="#faq" className="transition-colors hover:text-ink">{t.nav.faq}</a>
-          <a href="#download" className="transition-colors hover:text-ink">{t.nav.download}</a>
-          <a href={REPO_URL} className="transition-colors hover:text-ink">{t.nav.github}</a>
-        </nav>
-        <div className="flex items-center gap-2">
-          <ThemeToggle labels={t.theme} />
-          <a
-            href={`/${otherLang(lang)}`}
-            hrefLang={otherLang(lang)}
-            aria-label={lang === "en" ? "Cambiar a español" : "Switch to English"}
-            className="inline-flex h-9 w-12 items-center justify-center border border-line font-mono text-xs font-medium text-mute transition-colors hover:border-ink hover:text-ink"
-          >
-            {t.langLabel}
-          </a>
-          <a
-            href="#download"
-            className="hidden h-9 items-center border border-ink bg-ink px-4 text-sm font-medium text-paper transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_var(--color-ink)] sm:inline-flex"
-          >
-            {t.hero.download}
-          </a>
-        </div>
-      </div>
-    </header>
+    <svg
+      viewBox="0 0 24 24"
+      width={18}
+      height={18}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="transition-transform duration-200 group-hover:translate-y-0.5"
+    >
+      <path d="M12 4v12m0 0-5-5m5 5 5-5M5 20h14" />
+    </svg>
   );
+}
+
+function LiveDot({ className = "" }: { className?: string }) {
+  return <span className={`h-1.5 w-1.5 flex-none animate-pulse rounded-full bg-accent ${className}`} />;
 }
 
 function Hero({ t }: { t: T }) {
   return (
-    <section id="top" className="relative overflow-hidden border-b border-line">
-      <div className="grid-bg pointer-events-none absolute inset-0 h-full" aria-hidden />
-      <div className="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <Reveal as="span" className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink" />
-          {t.hero.badge}
-        </Reveal>
-        <Reveal delay={60}>
-          <h1 className="mt-8 text-4xl font-bold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl">
-            {t.hero.title}
-          </h1>
-        </Reveal>
-        <Reveal delay={120}>
-          <p className="mt-3 text-2xl font-semibold leading-[1.1] text-ink/70 sm:text-3xl md:text-4xl">
-            {t.hero.titleAccent}
-          </p>
-        </Reveal>
-        <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-          <Reveal delay={200}>
-            <p className="max-w-xl text-lg leading-relaxed text-mute">{t.hero.subtitle}</p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <a
-                href="#download"
-                className="group inline-flex h-12 items-center gap-2 border border-ink bg-ink px-6 text-sm font-medium text-paper transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_var(--color-ink)]"
-              >
-                {t.hero.download}
-                <span aria-hidden className="transition-transform duration-200 group-hover:translate-y-0.5">↓</span>
-              </a>
-              <a
-                href={REPO_URL}
-                className="inline-flex h-12 items-center border border-ink px-6 text-sm font-medium transition-colors duration-200 hover:bg-ink hover:text-paper"
-              >
-                {t.hero.source}
-              </a>
-            </div>
-            <p className="mt-8 max-w-xl font-mono text-xs leading-relaxed text-mute">{t.hero.replaces}</p>
-          </Reveal>
-          <Reveal delay={280} className="flex justify-center lg:justify-end">
-            <DockMock t={t} />
-          </Reveal>
-        </div>
-      </div>
+    <section id="top" className="relative isolate flex flex-col items-center gap-6 text-center lg:pt-4">
+      <div className="grid-bg pointer-events-none absolute -top-28 bottom-0 left-1/2 -z-10 w-screen -translate-x-1/2" aria-hidden />
+      <Reveal as="span" className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-1.5 text-[0.8125rem] text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        <LiveDot />
+        {t.hero.badge}
+      </Reveal>
+      <Reveal delay={60} className="flex flex-col items-center gap-3">
+        <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-balance text-gray-900 sm:text-5xl dark:text-gray-50">
+          {t.hero.title}
+        </h1>
+        <p className="max-w-2xl text-2xl font-semibold tracking-tight text-balance text-gray-400 sm:text-3xl dark:text-gray-500">
+          {t.hero.titleAccent}
+        </p>
+      </Reveal>
+      <Reveal delay={120}>
+        <p className="max-w-xl text-lg text-pretty">{t.hero.subtitle}</p>
+      </Reveal>
+      <Reveal delay={200} className="flex flex-col items-center gap-3">
+        <a data-testid="download" href="#download" className={`group ${button}`}>
+          <ArrowDown />
+          {t.hero.download}
+        </a>
+        <p className="text-sm">
+          <a href={REPO_URL} className={link}>
+            {t.hero.source}
+          </a>
+        </p>
+        <p className="max-w-md font-mono text-xs text-pretty text-gray-500 dark:text-gray-400">{t.hero.replaces}</p>
+      </Reveal>
+      <Reveal delay={280} className="mt-6 flex w-full justify-center">
+        <DockMock t={t} />
+      </Reveal>
     </section>
   );
 }
@@ -211,16 +186,20 @@ function DockMock({ t }: { t: T }) {
   ).padStart(2, "0")}`;
 
   return (
-    <div className="w-full max-w-md border border-ink bg-paper">
+    <div
+      data-testid="dock"
+      className="w-full max-w-lg overflow-hidden rounded-xl bg-paper text-left text-ink shadow-[0_1px_2px_rgba(15,23,42,0.06),0_24px_48px_-24px_rgba(15,23,42,0.25)] ring-1 ring-black/5 dark:shadow-[0_1px_2px_rgba(0,0,0,0.4),0_24px_48px_-24px_rgba(0,0,0,0.7)] dark:ring-white/10"
+    >
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <span className="font-mono text-xs font-bold tracking-tight">{t.dock.title}</span>
-        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-medium">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink" />
+        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-medium text-accent">
+          <LiveDot />
           {t.dock.live}
         </span>
       </div>
       <div className="flex border-b border-line font-mono text-xs">
         <button
+          data-testid="dock-tab-cameras"
           onClick={() => setTab("cameras")}
           className={`border-r border-line px-4 py-2 transition-colors ${
             tab === "cameras" ? "bg-ink text-paper" : "text-mute hover:text-ink"
@@ -229,6 +208,7 @@ function DockMock({ t }: { t: T }) {
           {t.dock.cameras}
         </button>
         <button
+          data-testid="dock-tab-streaming"
           onClick={() => setTab("streaming")}
           className={`border-r border-line px-4 py-2 transition-colors ${
             tab === "streaming" ? "bg-ink text-paper" : "text-mute hover:text-ink"
@@ -248,7 +228,7 @@ function DockMock({ t }: { t: T }) {
             </span>
           </div>
           <div className="h-1.5 w-full overflow-hidden bg-fog">
-            <div className="h-full bg-ink" style={{ width: `${p * 100}%` }} />
+            <div className="h-full bg-accent" style={{ width: `${p * 100}%` }} />
           </div>
           <div className="grid grid-cols-3 gap-1.5">
             {STEPS.map((s, idx) => {
@@ -262,9 +242,7 @@ function DockMock({ t }: { t: T }) {
                 >
                   <CamScene index={idx} active={active} />
                   <Corners active={active} />
-                  {active && (
-                    <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-paper" />
-                  )}
+                  {active && <LiveDot className="absolute right-1.5 top-1.5" />}
                   <div
                     className={`absolute inset-x-0 bottom-0 flex items-center justify-between px-2 py-1 ${
                       active ? "bg-paper/15" : "bg-ink/[0.04]"
@@ -361,39 +339,27 @@ function Corners({ active }: { active: boolean }) {
 
 function Pitch({ t }: { t: T }) {
   return (
-    <section className="border-b border-line">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
-          <Eyebrow>{t.pitch.tag}</Eyebrow>
-          <h2 className="mt-6 max-w-3xl text-3xl font-bold leading-tight tracking-tight md:text-5xl">
-            {t.pitch.title}
-          </h2>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.pitch.body}</p>
-        </Reveal>
-      </div>
-    </section>
+    <Reveal as="section" className="flex flex-col gap-6">
+      <Eyebrow>{t.pitch.tag}</Eyebrow>
+      <h2 className={heading}>{t.pitch.title}</h2>
+      <p className="max-w-2xl text-pretty">{t.pitch.body}</p>
+    </Reveal>
   );
 }
 
 function Features({ t }: { t: T }) {
   return (
-    <section id="features" className="border-b border-line">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
-          <Eyebrow>{t.nav.features}</Eyebrow>
-          <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-            {t.featuresTitle}
-          </h2>
-        </Reveal>
-        <div className="mt-12 grid gap-12 md:grid-cols-2 md:gap-16">
-          <Reveal delay={80}>
-            <FeatureCard f={t.rotation} kind="rotation" />
-          </Reveal>
-          <Reveal delay={160}>
-            <FeatureCard f={t.multistream} kind="stream" />
-          </Reveal>
-        </div>
-      </div>
+    <section id="features" className="flex scroll-mt-24 flex-col gap-12">
+      <Reveal className="flex flex-col gap-6">
+        <Eyebrow>{t.nav.features}</Eyebrow>
+        <h2 className={heading}>{t.featuresTitle}</h2>
+      </Reveal>
+      <Reveal delay={80}>
+        <FeatureCard f={t.rotation} kind="rotation" />
+      </Reveal>
+      <Reveal delay={160}>
+        <FeatureCard f={t.multistream} kind="stream" />
+      </Reveal>
     </section>
   );
 }
@@ -406,17 +372,17 @@ function FeatureCard({
   kind: "rotation" | "stream";
 }) {
   return (
-    <div className="flex h-full flex-col">
-      <span className="font-mono text-xs uppercase tracking-widest text-mute">{f.tag}</span>
-      <h3 className="mt-3 text-2xl font-bold tracking-tight">{f.title}</h3>
-      <p className="mt-4 text-sm leading-relaxed text-mute">{f.body}</p>
-      <div className="mt-auto pt-8 font-mono text-xs">
+    <article className="flex flex-col gap-4">
+      <span className="text-sm font-medium text-gray-500">{f.tag}</span>
+      <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">{f.title}</h3>
+      <p className="max-w-2xl text-pretty">{f.body}</p>
+      <div className="mt-2 text-sm">
         <div
-          className="grid border-b border-ink/80 pb-2"
+          className="grid border-b border-gray-300 pb-2 dark:border-gray-700"
           style={{ gridTemplateColumns: cols(kind) }}
         >
           {f.cols.map((c) => (
-            <span key={c} className="pr-3 text-[11px] uppercase tracking-wider text-mute">
+            <span key={c} className="pr-3 text-xs font-medium text-gray-500">
               {c}
             </span>
           ))}
@@ -424,11 +390,11 @@ function FeatureCard({
         {f.rows.map((row, i) => (
           <div
             key={i}
-            className="grid border-b border-line py-2.5 last:border-0"
+            className="grid border-b border-gray-200 py-2.5 last:border-0 dark:border-gray-800"
             style={{ gridTemplateColumns: cols(kind) }}
           >
             {row.map((cell, j) => (
-              <span key={j} className="truncate pr-3 tabular-nums text-mute">
+              <span key={j} className={`truncate pr-3 tabular-nums ${kind === "stream" && j === 1 ? "font-mono text-xs leading-5" : ""}`}>
                 {kind === "stream" && j === 2 ? <Toggle on={cell === "on"} /> : null}
                 {kind === "stream" && j === 3 ? <StatusDot status={cell} /> : null}
                 {(kind === "rotation" || j < 2) ? cell : null}
@@ -437,7 +403,7 @@ function FeatureCard({
           </div>
         ))}
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -447,7 +413,7 @@ function cols(kind: "rotation" | "stream") {
 
 function Toggle({ on }: { on: boolean }) {
   return (
-    <span className={`inline-grid h-4 w-4 place-items-center border ${on ? "border-ink bg-ink text-paper" : "border-line text-transparent"}`}>
+    <span className={`inline-grid h-4 w-4 place-items-center rounded border text-[10px] ${on ? "border-ink bg-ink text-paper" : "border-line text-transparent"}`}>
       ✓
     </span>
   );
@@ -456,8 +422,8 @@ function Toggle({ on }: { on: boolean }) {
 function StatusDot({ status }: { status: string }) {
   const live = status === "live";
   return (
-    <span className="inline-flex items-center gap-1.5 text-ink">
-      <span className={`h-1.5 w-1.5 rounded-full ${live ? "animate-pulse bg-ink" : "bg-line"}`} />
+    <span className={`inline-flex items-center gap-1.5 ${live ? "text-accent" : "text-mute"}`}>
+      {live ? <LiveDot /> : <span className="h-1.5 w-1.5 rounded-full bg-line" />}
       {live ? "LIVE" : "idle"}
     </span>
   );
@@ -465,24 +431,24 @@ function StatusDot({ status }: { status: string }) {
 
 function How({ t }: { t: T }) {
   return (
-    <section id="how" className="border-b border-line">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
-          <Eyebrow>{t.howTag}</Eyebrow>
-          <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-            {t.howTitle}
-          </h2>
-        </Reveal>
-        <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">
-          {t.steps.map((s, idx) => (
-            <Reveal key={s.n} delay={idx * 90} className="border-t border-ink/80 pt-5">
-              <span className="font-mono text-sm font-bold tracking-tight text-mute">{s.n}</span>
-              <h3 className="mt-4 text-lg font-bold tracking-tight">{s.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-mute">{s.body}</p>
-            </Reveal>
-          ))}
-        </div>
-      </div>
+    <section id="how" className="flex scroll-mt-24 flex-col gap-6">
+      <Reveal className="flex flex-col gap-6">
+        <Eyebrow>{t.howTag}</Eyebrow>
+        <h2 className={heading}>{t.howTitle}</h2>
+      </Reveal>
+      <ol className="border-b border-gray-200 dark:border-gray-800">
+        {t.steps.map((s, idx) => (
+          <Reveal key={s.n} as="li" delay={idx * 90} className="border-t border-gray-200 dark:border-gray-800">
+            <div className="scroll-track grid gap-4 py-6 sm:grid-cols-[11rem_1fr] sm:gap-8">
+              <h3 className="flex items-baseline gap-3 text-gray-800 dark:text-gray-100">
+                <span className="scroll-track-number font-mono text-xs tabular-nums text-gray-400 dark:text-gray-600">{s.n}</span>
+                <span className="font-medium">{s.title}</span>
+              </h3>
+              <p className="leading-relaxed text-pretty">{s.body}</p>
+            </div>
+          </Reveal>
+        ))}
+      </ol>
     </section>
   );
 }
@@ -539,123 +505,79 @@ function useLatestRelease(): ReleaseInfo | null {
 function Download({ t }: { t: T }) {
   const release = useLatestRelease();
   return (
-    <section id="download" className="border-b border-line">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
-          <Eyebrow>{t.download.tag}</Eyebrow>
-          <h2 className="mt-6 text-3xl font-bold leading-tight tracking-tight md:text-5xl">
-            {t.download.title}
-          </h2>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.download.body}</p>
-          {release && release.total > 0 && (
-            <p className="mt-4 font-mono text-xs text-mute">
-              ↓ {release.total.toLocaleString()} {t.download.downloads}
-            </p>
-          )}
-        </Reveal>
+    <section id="download" className="flex scroll-mt-24 flex-col gap-6">
+      <Reveal className="flex flex-col gap-6">
+        <Eyebrow>{t.download.tag}</Eyebrow>
+        <h2 className={heading}>{t.download.title}</h2>
+        <p className="max-w-2xl text-pretty">{t.download.body}</p>
+        {release && release.total > 0 && (
+          <p className="font-mono text-xs text-gray-500 dark:text-gray-400">
+            ↓ {release.total.toLocaleString()} {t.download.downloads}
+          </p>
+        )}
+      </Reveal>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          {PLATFORMS.map(({ os, icon: Icon, file }, idx) => {
-            const asset = release?.assets[os];
-            return (
-              <Reveal key={os} delay={idx * 80}>
-                <a
-                  href={asset?.url ?? RELEASES_URL}
-                  className="group flex h-full flex-col items-center gap-4 bg-fog px-6 py-12 text-center transition-[transform,background-color,color] duration-200 hover:-translate-y-1 hover:bg-ink hover:text-paper"
-                >
-                  <Icon className="h-10 w-10 transition-transform duration-200 group-hover:scale-110" />
-                  <span className="text-lg font-medium tracking-tight">{os}</span>
-                  <span className="inline-flex items-center gap-1.5 font-mono text-xs text-mute group-hover:text-paper/70">
-                    {file}
-                    <span aria-hidden className="transition-transform duration-200 group-hover:translate-y-0.5">↓</span>
-                    {asset && <span className="opacity-70">· {asset.count.toLocaleString()}</span>}
-                  </span>
-                </a>
-              </Reveal>
-            );
-          })}
-        </div>
-        <p className="mt-6 max-w-2xl font-mono text-xs leading-relaxed text-mute">{t.download.note}</p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {PLATFORMS.map(({ os, icon: Icon, file }, idx) => {
+          const asset = release?.assets[os];
+          return (
+            <Reveal key={os} delay={idx * 80}>
+              <a
+                href={asset?.url ?? RELEASES_URL}
+                className="group flex h-full flex-col items-center gap-4 rounded-xl bg-fog px-6 py-10 text-center text-ink transition-[transform,background-color,color] duration-200 hover:-translate-y-1 hover:bg-ink hover:text-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+              >
+                <Icon className="h-10 w-10 transition-transform duration-200 group-hover:scale-110" />
+                <span className="text-lg font-medium tracking-tight">{os}</span>
+                <span className="inline-flex items-center gap-1.5 font-mono text-xs text-mute group-hover:text-paper/70">
+                  {file}
+                  <span aria-hidden className="transition-transform duration-200 group-hover:translate-y-0.5">↓</span>
+                  {asset && <span className="opacity-70">· {asset.count.toLocaleString()}</span>}
+                </span>
+              </a>
+            </Reveal>
+          );
+        })}
       </div>
+      <p className="max-w-2xl text-sm text-pretty text-gray-500 dark:text-gray-400">{t.download.note}</p>
     </section>
   );
 }
 
 function Faq({ t }: { t: T }) {
   return (
-    <section id="faq" className="border-b border-line">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
-          <Eyebrow>{t.faqTag}</Eyebrow>
-          <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-            {t.faqTitle}
-          </h2>
-        </Reveal>
-        <div className="mt-12 max-w-3xl divide-y divide-line border-t border-line">
-          {t.faq.map((item, idx) => (
-            <Reveal key={idx} delay={idx * 60}>
-              <details className="group py-5">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium tracking-tight">
-                  {item.q}
-                  <span
-                    aria-hidden
-                    className="font-mono text-mute transition-transform duration-200 group-open:rotate-45"
-                  >
-                    +
-                  </span>
-                </summary>
-                <p className="mt-4 text-sm leading-relaxed text-mute">{item.a}</p>
-              </details>
-            </Reveal>
-          ))}
-        </div>
+    <section id="faq" className="flex scroll-mt-24 flex-col gap-6">
+      <Reveal className="flex flex-col gap-6">
+        <Eyebrow>{t.faqTag}</Eyebrow>
+        <h2 className={heading}>{t.faqTitle}</h2>
+      </Reveal>
+      <div className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-800 dark:border-gray-800">
+        {t.faq.map((item, idx) => (
+          <Reveal key={idx} delay={idx * 60}>
+            <details className="group py-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-gray-800 dark:text-gray-100">
+                {item.q}
+                <span
+                  aria-hidden
+                  className="text-lg leading-none text-gray-400 transition-transform duration-200 group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="mt-4 max-w-2xl leading-relaxed text-pretty">{item.a}</p>
+            </details>
+          </Reveal>
+        ))}
       </div>
     </section>
   );
 }
 
-function Footer({ t }: { t: T }) {
-  return (
-    <footer className="mx-auto max-w-6xl px-6 py-14">
-      <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
-        <div>
-          <div className="flex items-center gap-2.5 font-mono text-sm font-bold tracking-tight">
-            <Logo className="h-6 w-6" />
-            Oh My DJ
-          </div>
-          <p className="mt-3 max-w-xs text-sm text-mute">{t.footer.tagline}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-6 font-mono text-xs text-mute">
-          <a href={REPO_URL} className="transition-colors hover:text-ink">GitHub</a>
-          <a href={RELEASES_URL} className="transition-colors hover:text-ink">Releases</a>
-          <span>{t.footer.license}</span>
-        </div>
-      </div>
-      <div className="mt-10 border-t border-line pt-6 font-mono text-xs text-mute">
-        {t.footer.built}
-      </div>
-    </footer>
-  );
-}
-
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-mute">
-      <span className="h-px w-8 bg-ink" />
+    <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-500">
+      <span className="h-px w-6 bg-gray-400 dark:bg-gray-600" />
       {children}
     </span>
-  );
-}
-
-function Logo({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} fill="none" aria-hidden>
-      <circle cx="16" cy="16" r="15.5" fill="currentColor" />
-      <circle cx="16" cy="16" r="10" className="stroke-paper" strokeOpacity="0.25" />
-      <circle cx="16" cy="16" r="6.5" className="stroke-paper" strokeOpacity="0.25" />
-      <circle cx="16" cy="16" r="3.4" className="fill-paper" />
-      <circle cx="16" cy="16" r="0.9" fill="currentColor" />
-    </svg>
   );
 }
 

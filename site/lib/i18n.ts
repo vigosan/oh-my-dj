@@ -119,7 +119,7 @@ export type Dict = {
   faqTag: string;
   faqTitle: string;
   faq: { q: string; a: string }[];
-  footer: { tagline: string; donate: string; license: string; built: string };
+  footer: { tagline: string; donate: string; license: string; built: string; by: string };
 };
 
 export const dict: Record<Lang, Dict> = {
@@ -230,6 +230,7 @@ export const dict: Record<Lang, Dict> = {
       donate: "Donate ♥",
       license: "Open source",
       built: "Built with OBS, Qt6 and CMake.",
+      by: "Made by",
     },
   },
   es: {
@@ -339,6 +340,7 @@ export const dict: Record<Lang, Dict> = {
       donate: "Donar ♥",
       license: "Código abierto",
       built: "Hecho con OBS, Qt6 y CMake.",
+      by: "Hecho por",
     },
   },
 };
