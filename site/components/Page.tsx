@@ -64,6 +64,9 @@ export function Page({ lang, current, children }: { lang: Lang; current: "home" 
           <a href={RELEASES_URL} className={quiet}>
             Releases
           </a>
+          <Link href={`/${lang}/stats`} className={quiet}>
+            {t.footer.stats}
+          </Link>
           <span>{t.footer.license}</span>
           <span>{t.footer.built}</span>
           <span className="sm:ml-auto">

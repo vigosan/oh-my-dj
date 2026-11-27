@@ -119,7 +119,25 @@ export type Dict = {
   faqTag: string;
   faqTitle: string;
   faq: { q: string; a: string }[];
-  footer: { tagline: string; donate: string; license: string; built: string; by: string };
+  stats: {
+    title: string;
+    lede: string;
+    total: string;
+    downloads: { one: string; other: string };
+    mac: string;
+    windows: string;
+    linux: string;
+    lastWeek: string;
+    lastMonth: string;
+    weeklyTitle: string;
+    versionsTitle: string;
+    versionsText: string;
+    howTitle: string;
+    how: string[];
+    measuredSince: string;
+    error: string;
+  };
+  footer: { tagline: string; donate: string; license: string; built: string; by: string; stats: string };
 };
 
 export const dict: Record<Lang, Dict> = {
@@ -231,6 +249,30 @@ export const dict: Record<Lang, Dict> = {
       license: "Open source",
       built: "Built with OBS, Qt6 and CMake.",
       by: "Made by",
+      stats: "Stats",
+    },
+    stats: {
+      title: "How many people download Oh My DJ",
+      lede: "Oh My DJ has no telemetry, so it doesn't know who uses it. What is public is how many times each file of each release is downloaded from GitHub. These figures come from that.",
+      total: "downloads since {date}",
+      downloads: { one: "download", other: "downloads" },
+      mac: "macOS",
+      windows: "Windows",
+      linux: "Linux",
+      lastWeek: "in the last 7 days",
+      lastMonth: "in the last 30 days",
+      weeklyTitle: "Downloads per week",
+      versionsTitle: "Latest versions",
+      versionsText: "How many times each version was downloaded for each system.",
+      howTitle: "How it's counted",
+      how: [
+        "Each download of the macOS .pkg, the Windows .zip or the Linux .deb counts once.",
+        "The Linux debug symbols (.ddeb) are left out, since nobody needs them to use the plugin.",
+        "Updating means downloading the new version, so updates count as downloads too.",
+        "Bots that fetch every file are counted too, since nothing tells them apart from people.",
+      ],
+      measuredSince: "GitHub only keeps today's total. Everything before {date} is rebuilt from each version's date.",
+      error: "The figures could not be loaded. Try reloading the page.",
     },
   },
   es: {
@@ -341,6 +383,30 @@ export const dict: Record<Lang, Dict> = {
       license: "Código abierto",
       built: "Hecho con OBS, Qt6 y CMake.",
       by: "Hecho por",
+      stats: "Estadísticas",
+    },
+    stats: {
+      title: "Cuánta gente descarga Oh My DJ",
+      lede: "Oh My DJ no tiene telemetría, así que no sabe quién lo usa. Lo que es público es cuántas veces se descarga de GitHub cada archivo de cada versión. Estas cifras salen de ahí.",
+      total: "descargas desde el {date}",
+      downloads: { one: "descarga", other: "descargas" },
+      mac: "macOS",
+      windows: "Windows",
+      linux: "Linux",
+      lastWeek: "en los últimos 7 días",
+      lastMonth: "en los últimos 30 días",
+      weeklyTitle: "Descargas por semana",
+      versionsTitle: "Últimas versiones",
+      versionsText: "Cuántas veces se ha descargado cada versión para cada sistema.",
+      howTitle: "Cómo se cuenta",
+      how: [
+        "Cada descarga del .pkg de macOS, el .zip de Windows o el .deb de Linux cuenta una vez.",
+        "Los símbolos de depuración de Linux (.ddeb) no cuentan, porque nadie los necesita para usar el plugin.",
+        "Actualizar es descargar la nueva versión, así que las actualizaciones también cuentan como descargas.",
+        "También cuentan los bots que descargan todos los archivos, porque no hay forma de distinguirlos de las personas.",
+      ],
+      measuredSince: "GitHub solo guarda el total de hoy. Todo lo anterior al {date} se reconstruye a partir de la fecha de cada versión.",
+      error: "No se han podido cargar las cifras. Prueba a recargar la página.",
     },
   },
 };
