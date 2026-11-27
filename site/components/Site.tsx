@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { dict, type Lang, REPO_URL, RELEASES_URL } from "@/lib/i18n";
+import { ThemeToggle } from "./ThemeToggle";
 
 const otherLang = (l: Lang): Lang => (l === "en" ? "es" : "en");
 
@@ -101,6 +102,7 @@ function Header({ t, lang }: { t: T; lang: Lang }) {
           <a href={REPO_URL} className="transition-colors hover:text-ink">{t.nav.github}</a>
         </nav>
         <div className="flex items-center gap-2">
+          <ThemeToggle labels={t.theme} />
           <a
             href={`/${otherLang(lang)}`}
             hrefLang={otherLang(lang)}
@@ -311,7 +313,7 @@ function fmtDuration(secs: number) {
 function CamScene({ index, active }: { index: number; active: boolean }) {
   // Clean, filled glyphs sitting in the upper area so the bottom label bar stays
   // clear. Low-opacity monochrome so they read as a faint camera feed.
-  const tone = active ? "rgba(255,255,255,0.20)" : "rgba(10,10,10,0.10)";
+  const tone = active ? "color-mix(in oklab, var(--color-paper) 20%, transparent)" : "color-mix(in oklab, var(--color-ink) 10%, transparent)";
   return (
     <svg
       viewBox="0 0 48 27"
@@ -649,9 +651,9 @@ function Logo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} fill="none" aria-hidden>
       <circle cx="16" cy="16" r="15.5" fill="currentColor" />
-      <circle cx="16" cy="16" r="10" stroke="white" strokeOpacity="0.25" />
-      <circle cx="16" cy="16" r="6.5" stroke="white" strokeOpacity="0.25" />
-      <circle cx="16" cy="16" r="3.4" fill="white" />
+      <circle cx="16" cy="16" r="10" className="stroke-paper" strokeOpacity="0.25" />
+      <circle cx="16" cy="16" r="6.5" className="stroke-paper" strokeOpacity="0.25" />
+      <circle cx="16" cy="16" r="3.4" className="fill-paper" />
       <circle cx="16" cy="16" r="0.9" fill="currentColor" />
     </svg>
   );

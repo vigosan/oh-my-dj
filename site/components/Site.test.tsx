@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Site from "./Site";
-import { LANGS, RELEASES_URL, REPO_URL } from "@/lib/i18n";
+import { dict, LANGS, RELEASES_URL, REPO_URL } from "@/lib/i18n";
 
 describe.each(LANGS)("site in %s", (lang) => {
   const html = renderToStaticMarkup(<Site lang={lang} />);
@@ -26,5 +26,15 @@ describe.each(LANGS)("site in %s", (lang) => {
 
   it("links to the source code for people who want to build it themselves", () => {
     expect(html).toContain(`href="${REPO_URL}"`);
+  });
+});
+
+describe.each(LANGS)("theme in %s", (lang) => {
+  const html = renderToStaticMarkup(<Site lang={lang} />);
+
+  it("offers a theme button in the header that starts on system, so the page follows the visitor's Mac or PC until they pick otherwise", () => {
+    const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+    expect(header).toContain(`data-testid="theme-toggle"`);
+    expect(header).toContain(`aria-label="${dict[lang].theme.system}"`);
   });
 });

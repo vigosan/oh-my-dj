@@ -1,3 +1,5 @@
+import type { ThemeChoice } from "./theme";
+
 export type Lang = "en" | "es";
 
 export const LANGS: Lang[] = ["en", "es"];
@@ -81,6 +83,7 @@ type Step = { n: string; title: string; body: string };
 export type Dict = {
   nav: { features: string; how: string; faq: string; download: string; github: string };
   langLabel: string;
+  theme: Record<ThemeChoice, string>;
   hero: {
     badge: string;
     title: string;
@@ -123,6 +126,7 @@ export const dict: Record<Lang, Dict> = {
   en: {
     nav: { features: "Features", how: "How it works", faq: "FAQ", download: "Download", github: "GitHub" },
     langLabel: "ES",
+    theme: { system: "Theme: system", light: "Theme: light", dark: "Theme: dark" },
     hero: {
       badge: "OBS Studio plugin",
       title: "One dock for DJs.",
@@ -231,6 +235,7 @@ export const dict: Record<Lang, Dict> = {
   es: {
     nav: { features: "Funciones", how: "Cómo funciona", faq: "FAQ", download: "Descarga", github: "GitHub" },
     langLabel: "EN",
+    theme: { system: "Tema: sistema", light: "Tema: claro", dark: "Tema: oscuro" },
     hero: {
       badge: "Plugin de OBS Studio",
       title: "Un solo panel para DJs.",
