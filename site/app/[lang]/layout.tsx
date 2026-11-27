@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { GeistMono } from "geist/font/mono";
 import "../globals.css";
 import { LANGS, SITE_URL, type Lang } from "@/lib/i18n";
 
@@ -22,7 +21,7 @@ export default async function LangLayout({
   const htmlLang: Lang = lang === "es" ? "es" : "en";
   return (
     <html lang={htmlLang}>
-      <body className={`${GeistMono.variable} bg-canvas font-mono antialiased`}>{children}</body>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   );
 }
