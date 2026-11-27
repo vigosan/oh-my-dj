@@ -1,56 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { dict, type Lang, REPO_URL, RELEASES_URL } from "@/lib/i18n";
 
 const otherLang = (l: Lang): Lang => (l === "en" ? "es" : "en");
-
-function Reveal({
-  children,
-  delay = 0,
-  className = "",
-  as: Tag = "div",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-  as?: "div" | "section" | "li" | "span";
-}) {
-  const ref = useRef<HTMLElement>(null);
-  const [shown, setShown] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (reduce.matches) {
-      setShown(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShown(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: "0px 0px -12% 0px", threshold: 0.1 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return (
-    <Tag
-      ref={ref as React.Ref<never>}
-      data-shown={shown}
-      className={`reveal ${className}`}
-      style={{ ["--reveal-delay" as string]: `${delay}ms` }}
-    >
-      {children}
-    </Tag>
-  );
-}
 
 const PLATFORMS = [
   { os: "macOS", icon: AppleIcon, file: ".pkg" },
@@ -126,22 +79,22 @@ function Hero({ t }: { t: T }) {
     <section id="top" className="relative overflow-hidden border-b border-line">
       <div className="grid-bg pointer-events-none absolute inset-0 h-full" aria-hidden />
       <div className="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <Reveal as="span" className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
+        <span className="inline-flex items-center gap-2 border border-line px-3 py-1 font-mono text-xs uppercase tracking-widest text-mute">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ink" />
           {t.hero.badge}
-        </Reveal>
-        <Reveal delay={60}>
+        </span>
+        <div>
           <h1 className="mt-8 text-4xl font-bold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl">
             {t.hero.title}
           </h1>
-        </Reveal>
-        <Reveal delay={120}>
+        </div>
+        <div>
           <p className="mt-3 text-2xl font-semibold leading-[1.1] text-ink/70 sm:text-3xl md:text-4xl">
             {t.hero.titleAccent}
           </p>
-        </Reveal>
+        </div>
         <div className="mt-12 grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
-          <Reveal delay={200}>
+          <div>
             <p className="max-w-xl text-lg leading-relaxed text-mute">{t.hero.subtitle}</p>
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <a
@@ -159,10 +112,10 @@ function Hero({ t }: { t: T }) {
               </a>
             </div>
             <p className="mt-8 max-w-xl font-mono text-xs leading-relaxed text-mute">{t.hero.replaces}</p>
-          </Reveal>
-          <Reveal delay={280} className="flex justify-center lg:justify-end">
+          </div>
+          <div className="flex justify-center lg:justify-end">
             <DockMock t={t} />
-          </Reveal>
+          </div>
         </div>
       </div>
     </section>
@@ -361,13 +314,13 @@ function Pitch({ t }: { t: T }) {
   return (
     <section className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
+        <div>
           <Eyebrow>{t.pitch.tag}</Eyebrow>
           <h2 className="mt-6 max-w-3xl text-3xl font-bold leading-tight tracking-tight md:text-5xl">
             {t.pitch.title}
           </h2>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-mute">{t.pitch.body}</p>
-        </Reveal>
+        </div>
       </div>
     </section>
   );
@@ -377,19 +330,19 @@ function Features({ t }: { t: T }) {
   return (
     <section id="features" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
+        <div>
           <Eyebrow>{t.nav.features}</Eyebrow>
           <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
             {t.featuresTitle}
           </h2>
-        </Reveal>
+        </div>
         <div className="mt-12 grid gap-12 md:grid-cols-2 md:gap-16">
-          <Reveal delay={80}>
+          <div>
             <FeatureCard f={t.rotation} kind="rotation" />
-          </Reveal>
-          <Reveal delay={160}>
+          </div>
+          <div>
             <FeatureCard f={t.multistream} kind="stream" />
-          </Reveal>
+          </div>
         </div>
       </div>
     </section>
@@ -465,19 +418,19 @@ function How({ t }: { t: T }) {
   return (
     <section id="how" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
+        <div>
           <Eyebrow>{t.howTag}</Eyebrow>
           <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
             {t.howTitle}
           </h2>
-        </Reveal>
+        </div>
         <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-12">
           {t.steps.map((s, idx) => (
-            <Reveal key={s.n} delay={idx * 90} className="border-t border-ink/80 pt-5">
+            <div key={s.n} className="border-t border-ink/80 pt-5">
               <span className="font-mono text-sm font-bold tracking-tight text-mute">{s.n}</span>
               <h3 className="mt-4 text-lg font-bold tracking-tight">{s.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-mute">{s.body}</p>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>
@@ -539,7 +492,7 @@ function Download({ t }: { t: T }) {
   return (
     <section id="download" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
+        <div>
           <Eyebrow>{t.download.tag}</Eyebrow>
           <h2 className="mt-6 text-3xl font-bold leading-tight tracking-tight md:text-5xl">
             {t.download.title}
@@ -550,13 +503,13 @@ function Download({ t }: { t: T }) {
               ↓ {release.total.toLocaleString()} {t.download.downloads}
             </p>
           )}
-        </Reveal>
+        </div>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
           {PLATFORMS.map(({ os, icon: Icon, file }, idx) => {
             const asset = release?.assets[os];
             return (
-              <Reveal key={os} delay={idx * 80}>
+              <div key={os}>
                 <a
                   href={asset?.url ?? RELEASES_URL}
                   className="group flex h-full flex-col items-center gap-4 bg-fog px-6 py-12 text-center transition-[transform,background-color,color] duration-200 hover:-translate-y-1 hover:bg-ink hover:text-paper"
@@ -569,7 +522,7 @@ function Download({ t }: { t: T }) {
                     {asset && <span className="opacity-70">· {asset.count.toLocaleString()}</span>}
                   </span>
                 </a>
-              </Reveal>
+              </div>
             );
           })}
         </div>
@@ -583,15 +536,15 @@ function Faq({ t }: { t: T }) {
   return (
     <section id="faq" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-24">
-        <Reveal>
+        <div>
           <Eyebrow>{t.faqTag}</Eyebrow>
           <h2 className="mt-6 max-w-2xl text-3xl font-bold leading-tight tracking-tight md:text-4xl">
             {t.faqTitle}
           </h2>
-        </Reveal>
+        </div>
         <div className="mt-12 max-w-3xl divide-y divide-line border-t border-line">
           {t.faq.map((item, idx) => (
-            <Reveal key={idx} delay={idx * 60}>
+            <div key={idx}>
               <details className="group py-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium tracking-tight">
                   {item.q}
@@ -604,7 +557,7 @@ function Faq({ t }: { t: T }) {
                 </summary>
                 <p className="mt-4 text-sm leading-relaxed text-mute">{item.a}</p>
               </details>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>

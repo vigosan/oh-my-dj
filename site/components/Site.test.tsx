@@ -24,6 +24,10 @@ describe.each(LANGS)("site in %s", (lang) => {
     expect(downloads.length).toBeGreaterThanOrEqual(3);
   });
 
+  it("renders every section visible from the first paint, so content never waits for a scroll to appear", () => {
+    expect(html).not.toContain('data-shown="false"');
+  });
+
   it("links to the source code for people who want to build it themselves", () => {
     expect(html).toContain(`href="${REPO_URL}"`);
   });
