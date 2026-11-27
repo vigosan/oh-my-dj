@@ -516,7 +516,12 @@ function Footer({ t }: { t: T }) {
         </a>
         <span>{t.footer.license}</span>
       </p>
-      <p>{t.footer.built}</p>
+      <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span>{t.footer.built}</span>
+        <a href="https://vicent.io" className="link px-1 underline">
+          by Vicent Gozalbes <span aria-hidden>↗</span>
+        </a>
+      </p>
     </footer>
   );
 }

@@ -40,6 +40,10 @@ describe.each(LANGS)("site in %s", (lang) => {
     expect(html).not.toContain("font-family");
   });
 
+  it("credits its author with a link back to vicent.io, tying the product to the rest of his work", () => {
+    expect(html).toMatch(/<a [^>]*href="https:\/\/vicent\.io"[^>]*>by Vicent Gozalbes/);
+  });
+
   it("links to the source code for people who want to build it themselves", () => {
     expect(html).toContain(`href="${REPO_URL}"`);
   });
