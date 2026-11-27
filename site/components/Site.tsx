@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { dict, type Lang, REPO_URL, RELEASES_URL } from "@/lib/i18n";
+import type { Stats } from "@/lib/stats";
+import { HeroStats } from "./HeroStats";
 import { button, link, Page } from "./Page";
 
 const heading = "text-2xl font-semibold tracking-tight text-balance text-gray-900 dark:text-gray-50";
@@ -65,7 +67,7 @@ const STEPS = [
   { name: "CAM 3", secs: 60 },
 ];
 
-export default function Site({ lang }: { lang: Lang }) {
+export default function Site({ lang, stats }: { lang: Lang; stats: Stats | null }) {
   const t = dict[lang];
 
   return (
@@ -73,7 +75,7 @@ export default function Site({ lang }: { lang: Lang }) {
       <div aria-hidden className="scroll-playhead">
         <div className="scroll-playhead-head" />
       </div>
-      <Hero t={t} />
+      <Hero t={t} lang={lang} stats={stats} />
       <Pitch t={t} />
       <Features t={t} />
       <How t={t} />
@@ -108,7 +110,7 @@ function LiveDot({ className = "" }: { className?: string }) {
   return <span className={`h-1.5 w-1.5 flex-none animate-pulse rounded-full bg-accent ${className}`} />;
 }
 
-function Hero({ t }: { t: T }) {
+function Hero({ t, lang, stats }: { t: T; lang: Lang; stats: Stats | null }) {
   return (
     <section id="top" className="relative isolate flex flex-col items-center gap-6 text-center lg:pt-4">
       <div className="grid-bg pointer-events-none absolute -top-28 bottom-0 left-1/2 -z-10 w-screen -translate-x-1/2" aria-hidden />
@@ -139,6 +141,11 @@ function Hero({ t }: { t: T }) {
         </p>
         <p className="max-w-md font-mono text-xs text-pretty text-gray-500 dark:text-gray-400">{t.hero.replaces}</p>
       </Reveal>
+      {stats && (
+        <Reveal delay={240}>
+          <HeroStats lang={lang} stats={stats} />
+        </Reveal>
+      )}
       <Reveal delay={280} className="mt-6 flex w-full justify-center">
         <DockMock t={t} />
       </Reveal>

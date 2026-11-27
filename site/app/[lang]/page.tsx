@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Site from "@/components/Site";
+import { fetchStats } from "@/lib/stats";
 import {
   LANGS,
   SITE_URL,
@@ -99,10 +100,11 @@ export default async function LangPage({
 }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
+  const stats = await fetchStats();
   return (
     <>
       <JsonLd lang={lang} />
-      <Site lang={lang} />
+      <Site lang={lang} stats={stats} />
     </>
   );
 }

@@ -4,7 +4,7 @@ import Site from "./Site";
 import { dict, LANGS, RELEASES_URL, REPO_URL } from "@/lib/i18n";
 
 describe.each(LANGS)("site in %s", (lang) => {
-  const html = renderToStaticMarkup(<Site lang={lang} />);
+  const html = renderToStaticMarkup(<Site lang={lang} stats={null} />);
 
   it("keeps the in-page navigation so visitors can jump straight to what they came for", () => {
     for (const id of ["features", "how", "faq", "download"]) {
@@ -30,7 +30,7 @@ describe.each(LANGS)("site in %s", (lang) => {
 });
 
 describe.each(LANGS)("theme in %s", (lang) => {
-  const html = renderToStaticMarkup(<Site lang={lang} />);
+  const html = renderToStaticMarkup(<Site lang={lang} stats={null} />);
 
   it("offers a theme button in the header that starts on system, so the page follows the visitor's Mac or PC until they pick otherwise", () => {
     const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
@@ -41,7 +41,7 @@ describe.each(LANGS)("theme in %s", (lang) => {
 
 describe.each(LANGS)("family layout in %s", (lang) => {
   const t = dict[lang];
-  const html = renderToStaticMarkup(<Site lang={lang} />);
+  const html = renderToStaticMarkup(<Site lang={lang} stats={null} />);
   const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
   const footer = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
 
